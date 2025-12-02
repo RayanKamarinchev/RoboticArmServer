@@ -25,6 +25,8 @@ def receive_image():
     print("Received:", len(file_bytes), "bytes")
 
     filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    print(BASE_DIR)
+    print(UPLOAD_FOLDER)
     save_path = os.path.join(UPLOAD_FOLDER, filename)
 
     with open(save_path, 'wb') as f:
