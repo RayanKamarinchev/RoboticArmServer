@@ -21,18 +21,18 @@ def receive_image():
 
     file_bytes = request.data
 
-    file_stream = io.BytesIO(file_bytes)
+    # file_stream = io.BytesIO(file_bytes)
 
-    pos = get_camera_position(file_stream)
+    # pos = get_camera_position(file_stream)
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"photo_{timestamp}_{'_'.join(map(str, pos.tolist()))}.jpg"
+    filename = f"photo_{timestamp}_.jpg"
     save_path = os.path.join(UPLOAD_FOLDER, filename)
 
     with open(save_path, 'wb') as f:
         f.write(file_bytes)
 
-    return jsonify(pos.tolist())
+    return jsonify({"message": "Image received and saved successfully."})
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
