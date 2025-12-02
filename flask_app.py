@@ -14,16 +14,13 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/get_position', methods=['POST'])
 def receive_image():
-    if 'imageFile' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+    # if 'imageFile' not in request.files:
+    #     return jsonify({'error': 'No file part'}), 400
 
-    file = request.files['imageFile']
+    # file = request.files['imageFile']
 
-    # file_bytes = request.data
-    file_bytes = request.files['imageFile'].read()
-    print(f"Received {len(file_bytes)} bytes")
-    print(request.headers)
-    print(request.data)
+    # file_bytes = request.files['imageFile'].read()
+    file_bytes = request.data
 
     # file_stream = io.BytesIO(file_bytes)
 
