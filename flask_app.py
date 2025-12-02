@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import os
 from datetime import datetime
 import io
@@ -10,6 +10,7 @@ app = Flask(__name__)
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 
 
 @app.route('/get_position', methods=['POST'])
@@ -28,7 +29,31 @@ def receive_image():
     with open(save_path, 'wb') as f:
         f.write(file_bytes)
 
+    with open(LATEST_IMAGE_PATH, 'wb') as f:
+        f.write(file_bytes)
+
     return jsonify({"message": "OK", "bytes": len(file_bytes)})
+
+@app.route('/latest.jpg')
+def latest_image():
+    if os.path.exists(LATEST_IMAGE_PATH):
+        return send_file(LATEST_IMAGE_PATH, mimetype='image/jpeg')
+    return "No image received yet.", 404
+
+@app.route('/')
+def index():
+    return """
+    <html>
+        <head>
+            <title>ESP32-CAM Live View</title>
+            <meta http-equiv="refresh" content="1">
+        </head>
+        <body>
+            <h1>Latest ESP32-CAM Image</h1>
+            <img src="/latest.jpg" width="640">
+        </body>
+    </html>
+    """
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
