@@ -8,7 +8,8 @@ from src.movement import move
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'uploads'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 
@@ -34,7 +35,7 @@ def receive_image():
 
     return jsonify({"message": "OK", "bytes": len(file_bytes)})
 
-@app.route('/latest.jpg')
+@app.route('/latest')
 def latest_image():
     if os.path.exists(LATEST_IMAGE_PATH):
         return send_file(LATEST_IMAGE_PATH, mimetype='image/jpeg')
@@ -50,7 +51,7 @@ def index():
         </head>
         <body>
             <h1>Latest ESP32-CAM Image</h1>
-            <img src="/latest.jpg" width="640">
+            <img src="/uploads/latest.jpg" width="640">
         </body>
     </html>
     """
