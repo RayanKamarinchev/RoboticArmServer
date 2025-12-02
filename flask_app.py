@@ -26,7 +26,6 @@ def receive_image():
 
     annotated_bytes, ids = detect_aruco(file_bytes)
     print(ids)
-    print(len(ids))
     
     filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     save_path = os.path.join(UPLOAD_FOLDER, filename)
