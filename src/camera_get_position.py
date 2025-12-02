@@ -11,22 +11,21 @@ def detect_aruco(image_bytes):
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_5X5_100)
-    parameters = aruco.DetectorParameters_create()
+    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
+    parameters = aruco.DetectorParameters()
+    detector = aruco.ArucoDetector(aruco_dict, parameters)
 
-    corners, ids, _ = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
+    corners, ids, _ = detector.detectMarkers(gray)
 
     if ids is not None:
         aruco.drawDetectedMarkers(img, corners, ids)
 
-        for corner, marker_id in zip(corners, ids.flatten()):
-            c = corner[0]
-            center = c.mean(axis=0).astype(int)
-            cv2.circle(img, tuple(center), 5, (0, 0, 255), -1)
-            cv2.putText(img, str(marker_id), tuple(center + np.array([10, 10])),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-
-        print(f"Detected ArUco IDs: {ids.flatten().tolist()}")
+        # for corner, marker_id in zip(corners, ids.flatten()):
+        #     c = corner[0]
+        #     center = c.mean(axis=0).astype(int)
+        #     cv2.circle(img, tuple(center), 5, (0, 0, 255), -1)
+        #     cv2.putText(img, str(marker_id), tuple(center + np.array([10, 10])),
+        #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
     else:
         print("No ArUco markers detected.")
 
