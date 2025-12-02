@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import io
 
-from src.camera_get_position import get_camera_position
+from src.camera_get_position import detect_aruco, get_camera_position
 from src.movement import move
 
 app = Flask(__name__)
@@ -24,20 +24,22 @@ def receive_image():
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
 
+    annotated_bytes, ids = detect_aruco(file_bytes)
+    print(ids)
+    print(len(ids))
+    
     filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-    print(BASE_DIR)
-    print(UPLOAD_FOLDER)
     save_path = os.path.join(UPLOAD_FOLDER, filename)
 
     with open(save_path, 'wb') as f:
-        f.write(file_bytes)
+        f.write(annotated_bytes)
 
     with open(LATEST_IMAGE_PATH, 'wb') as f:
-        f.write(file_bytes)
+        f.write(annotated_bytes)
 
     return jsonify({"message": "OK", "bytes": len(file_bytes)})
 
-@app.route('/latest')
+@app.route('/latest.jpg')
 def latest_image():
     if os.path.exists(LATEST_IMAGE_PATH):
         return send_file(LATEST_IMAGE_PATH, mimetype='image/jpeg')
@@ -53,7 +55,7 @@ def index():
         </head>
         <body>
             <h1>Latest ESP32-CAM Image</h1>
-            <img src="/uploads/latest.jpg" width="640">
+            <img src="latest.jpg" width="640">
         </body>
     </html>
     """
