@@ -20,6 +20,9 @@ def receive_image():
     # file = request.files['imageFile']
 
     file_bytes = request.data
+    print(f"Received {len(file_bytes)} bytes")
+    print(request.headers)
+    print(request.data)
 
     # file_stream = io.BytesIO(file_bytes)
 
