@@ -14,26 +14,21 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/get_position', methods=['POST'])
 def receive_image():
-    # if 'imageFile' not in request.files:
-    #     return jsonify({'error': 'No file part'}), 400
+    if 'imageFile' not in request.files:
+        print("FILES:", request.files)
+        return jsonify({"error": "No file part"}), 400
 
-    # file = request.files['imageFile']
+    file = request.files['imageFile']
+    file_bytes = file.read()
+    print("Received:", len(file_bytes), "bytes")
 
-    # file_bytes = request.files['imageFile'].read()
-    file_bytes = request.data
-
-    # file_stream = io.BytesIO(file_bytes)
-
-    # pos = get_camera_position(file_stream)
-
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = f"photo_{timestamp}_.jpg"
+    filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     save_path = os.path.join(UPLOAD_FOLDER, filename)
 
     with open(save_path, 'wb') as f:
         f.write(file_bytes)
 
-    return jsonify({"message": "Image received and saved successfully."})
+    return jsonify({"message": "OK", "bytes": len(file_bytes)})
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
