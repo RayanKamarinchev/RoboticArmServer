@@ -25,16 +25,16 @@ def receive_image():
     print("Received:", len(file_bytes), "bytes")
 
     annotated_bytes, ids = detect_aruco(file_bytes)
-    print(ids)
     
     filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     save_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    with open(save_path, 'wb') as f:
-        f.write(annotated_bytes)
-
+    # with open(save_path, 'wb') as f:
+    #     f.write(annotated_bytes)
+    print("start file writing")
     with open(LATEST_IMAGE_PATH, 'wb') as f:
         f.write(annotated_bytes)
+    print("file writing done")
 
     return jsonify({"message": "OK", "bytes": len(file_bytes)})
 
