@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import io
 
-from src.camera_get_position import detect_aruco, get_camera_position
+from camera_utils import detect_aruco, get_camera_position
 from src.movement import move
 
 app = Flask(__name__)
