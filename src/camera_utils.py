@@ -3,7 +3,7 @@ import cv2.aruco as aruco
 import numpy as np
 import io
 
-def decoede_image(image_bytes):
+def decode_image(image_bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     return img
@@ -164,7 +164,7 @@ def aruco_board(image, marker_size=0.036, marker_spacing=0.005):
 
 
 
-def try2(img, marker_size=0.036, marker_spacing=0.005):
+def get_camera_pos_from_board(img, marker_size=0.036, marker_spacing=0.005):
     camera_matrix = np.load("./src/camera_matrix.npy")
     dist_coeffs   = np.load("./src/dist_coeffs.npy")
     
@@ -189,11 +189,14 @@ def try2(img, marker_size=0.036, marker_spacing=0.005):
         
     cv2.drawFrameAxes(img, camera_matrix, dist_coeffs, rvec, tvec, 0.25)
     
-    cv2.imwrite('./src/examples/annotated_image.jpg', img)
-    
-    print("Translation vector:", tvec.flatten())
-    print("Rotation vector:", rvec.flatten())
     error = np.mean(np.linalg.norm(image_points - proj.reshape(-1,2), axis=1))
 
-    print(error)
-    return img, rvec, tvec
+    print("Position error: ", error)
+    
+    R, _ = cv2.Rodrigues(rvec)
+    # Camera position in board frame
+    camera_position = -R.T @ tvec
+    camera_position = camera_position.flatten()
+    #swapping boards x and y
+    camera_position = [camera_position[1], camera_position[0], -camera_position[2]]
+    return img, camera_position

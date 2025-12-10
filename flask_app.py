@@ -1,10 +1,11 @@
+import cv2
 from flask import Flask, request, jsonify, send_file
 import os
 from datetime import datetime
 import io
 
-from camera_utils import detect_aruco, get_camera_position
-from src.movement import move
+from camera_utils import decode_image, get_camera_pos_from_board
+from src.movement import get_move_angles, get_initial_angles
 
 app = Flask(__name__)
 
@@ -12,6 +13,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
+angles = get_initial_angles()
 
 
 @app.route('/get_position', methods=['POST'])
@@ -24,19 +26,15 @@ def receive_image():
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
 
-    annotated_bytes, ids = detect_aruco(file_bytes)
+    img = decode_image(file_bytes)
+    img, camera_position = get_camera_pos_from_board(img)
     
-    filename = f"photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-    save_path = os.path.join(UPLOAD_FOLDER, filename)
-
-    # with open(save_path, 'wb') as f:
-    #     f.write(annotated_bytes)
     print("start file writing")
-    with open(LATEST_IMAGE_PATH, 'wb') as f:
-        f.write(annotated_bytes)
+    cv2.imwrite(LATEST_IMAGE_PATH, img)
     print("file writing done")
-
-    return jsonify({"message": "OK", "bytes": len(file_bytes)})
+    
+    angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], angles)
+    return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
 
 @app.route('/latest.jpg')
 def latest_image():
@@ -61,12 +59,7 @@ def index():
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
-    x = float(request.args.get('x'))
-    y = float(request.args.get('y'))
-    z = float(request.args.get('z'))
-    moves = move(x, y, z)
-
-    return jsonify(moves), 200
+    return jsonify(angles), 200
 
 
 if __name__ == '__main__':

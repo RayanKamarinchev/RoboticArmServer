@@ -2,22 +2,63 @@ import math
 import numpy as np
 from scipy.optimize import minimize
 
-a = 11.7
-b = 12.2
-c = 13
-baseElevation = 13
+# Robot arm segment lengths in cm
+a = 0.117
+b = 0.122
+c = 0.127
+e = 0.067
+baseElevation = 0.13
+# Initial joint angles in degrees
+alpha = np.radians(88)
+beta = np.radians(178)
+gamma = np.radians(74)
+delta = np.radians(76)
 
-def move(x, y, z):
+def get_initial_angles():
+    return [alpha, beta, gamma]
+
+def conv_camera_coords_to_gripper_coords(camera_coords, angles):
+    gripper_angle = angles[0] + angles[1] + angles[2]
+    camera_angle = gripper_angle + delta
+    camera_vertical_change = math.sin(camera_angle)  * e
+    camera_horizontal_change = math.cos(camera_angle) * e
+    gripper__base_x = camera_coords[0] + camera_horizontal_change
+    gripper__base_z = camera_coords[2] - camera_vertical_change
+    
+    gripper_horizontal_change = math.cos(gripper_angle) * c
+    gripper_vertical_change = math.sin(gripper_angle) * c
+    gripper_x = gripper__base_x - gripper_horizontal_change
+    gripper_z = gripper__base_z + gripper_vertical_change
+    
+    return [gripper_x, camera_coords[1], gripper_z]
+
+def x_from_arm(angles):
+    return a * np.cos(angles[0]) - b * np.cos(angles[0] + angles[1]) + c * np.cos(angles[0] + angles[1] + angles[2])
+
+def z_from_arm(angles):
+    return a * np.sin(angles[0]) - b * np.sin(angles[0] + angles[1]) + c * np.sin(angles[0] + angles[1] + angles[2]) + baseElevation
+
+def get_gripper_coords_from_arm(angles):
+    z = z_from_arm(angles)
+    x = x_from_arm(angles)
+    return [x, 0, z]
+
+def move_to_position(initial_gripper_coords_from_base, initial_angles, desired_coords):
+    x, y, z = desired_coords
+    print(f"Moving to position x:{x} y:{y} z:{z}")
+    
+    initial_arm_x, _, initial_arm_z = get_gripper_coords_from_arm(initial_angles)
+    
     def objective(vars):
         alpha, beta, gamma = vars
         # Equation residuals
-        eq1 = a * np.sin(alpha) - b * np.sin(alpha + beta) + c * np.sin(alpha + beta + gamma) - z + baseElevation
-        eq2 = a * np.cos(alpha) - b * np.cos(alpha + beta) + c * np.cos(alpha + beta + gamma) - x
+        eq1 = z_from_arm(vars) - z
+        eq2 = initial_gripper_coords_from_base[0] - (x_from_arm(vars) - initial_arm_x) - x
 
         total_angle_deg = np.degrees(x + y + z)
-        penalty = (total_angle_deg - 270) ** 2
+        penalty = (total_angle_deg - 270) ** 2 # TODO review penalty
 
-        return eq1 ** 2 + eq2 ** 2 + 0.01 * penalty
+        return eq1 ** 2 + eq2 ** 2 + 1e-8 * penalty
 
     def constraintJoint1(vars):
         alpha, beta, gamma = vars
@@ -33,7 +74,7 @@ def move(x, y, z):
 
     def constraintJointUpper2(vars):
         alpha, beta, gamma = vars
-        return 215 - np.degrees(alpha)
+        return 215 - np.degrees(beta)
 
     def constraintJoint3(vars):
         alpha, beta, gamma = vars
@@ -52,8 +93,6 @@ def move(x, y, z):
     #
     # return [0,math.degrees(newJointAngle1-oldJointAngle1), math.degrees(oldJointAngle2 - newJointAngle2), 0, 0, 0]
     # Results
-    # Initial guess (in radians)
-    x0 = np.radians([88, 178, 74])
 
     # Bounds are optional but can help convergence
     bounds = [(0, 2 * np.pi)] * 3
@@ -61,7 +100,7 @@ def move(x, y, z):
     # Solve
     result = minimize(
         objective,
-        x0,
+        initial_angles,
         bounds=bounds,
         constraints=[
             {'type': 'ineq', 'fun': constraintJoint1},
@@ -76,22 +115,38 @@ def move(x, y, z):
     if result.success:
         alpha_opt, beta_opt, gamma_opt = result.x
         print("Solution found:")
-        print(f"x = {np.degrees(alpha_opt):.2f}°")
-        print(f"y = {np.degrees(beta_opt):.2f}°")
-        print(f"z = {np.degrees(gamma_opt):.2f}°")
-        print(f"x + y + z = {np.degrees(alpha_opt + beta_opt + gamma_opt):.2f}°")
-        print(f"z: {a * np.sin(alpha_opt) - b * np.sin(alpha_opt + beta_opt) + c * np.sin(alpha_opt + beta_opt + gamma_opt) + baseElevation}")
-        print(f"x: {a * np.cos(alpha_opt) - b * np.cos(alpha_opt + beta_opt) + c * np.cos(alpha_opt + beta_opt + gamma_opt)}")
+        print(f"alpha = {np.degrees(alpha_opt):.2f}°")
+        print(f"beta = {np.degrees(beta_opt):.2f}°")
+        print(f"gamma = {np.degrees(gamma_opt):.2f}°")
+        print(f"alpha + beta + gamma = {np.degrees(alpha_opt + beta_opt + gamma_opt):.2f}°")
+        
+        print(f"Desired z: {z}")
+        # print(f"Initial z: {initial_gripper_coords_from_base[2]}")
+        print(f"Result z: {z_from_arm([alpha_opt, beta_opt, gamma_opt])}")
+        
+        print(f"Desired x: {x}")
+        # print(f"X from arm: {x_from_arm([alpha_opt, beta_opt, gamma_opt])}")
+        # print(f"Initial arm x: {initial_arm_x}")
+        # print(f"Initial gripper x from base: {initial_gripper_coords_from_base[0]}")
+        print(f"Result x: {initial_gripper_coords_from_base[0] - (x_from_arm([alpha_opt, beta_opt, gamma_opt]) - initial_arm_x)}")
+        
+        print(f"Penalty: {(((alpha_opt + beta_opt + gamma_opt) - 270) ** 2)* 1e-8}")
     else:
         print("Optimization failed:", result.message)
 
-    return [np.degrees(alpha_opt), np.degrees(beta_opt), np.degrees(gamma_opt)]
+    return [alpha_opt, beta_opt, gamma_opt]
+
+def get_move_angles(camera_coords, target_coords, current_angles):
+    gripper_coords = conv_camera_coords_to_gripper_coords(camera_coords, current_angles)
+    degrees = move_to_position(gripper_coords, current_angles, target_coords)
+    return degrees
 
 
 #13.4-13.6
-# x, y, z = (13.5, 0, 32.4)
-# move(x,y,z)
-#
-# alpha,beta,gamma = np.radians([88, 178, 74])
-# print(a * np.sin(alpha) - b * np.sin(alpha + beta) + c * np.sin(alpha + beta + gamma) + 13)
-# print(a * np.cos(alpha) - b * np.cos(alpha + beta) + c * np.cos(alpha + beta + gamma))
+camera_coords = [0.49574684, 0.0616682, 0.42840817]
+desired_coords = [0.2, camera_coords[1], 0.05]
+degrees = get_move_angles(camera_coords, desired_coords, [alpha, beta, gamma])
+alpha, beta, gamma = degrees
+print(a * np.sin(alpha) - b * np.sin(alpha + beta) + c * np.sin(alpha + beta + gamma) + baseElevation)
+print(a * np.cos(alpha) - b * np.cos(alpha + beta) + c * np.cos(alpha + beta + gamma))
+print("Final Angles:", [np.degrees(alpha), np.degrees(beta), np.degrees(gamma)])

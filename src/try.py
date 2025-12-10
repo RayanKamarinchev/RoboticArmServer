@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
-from camera_utils import detect_aruco, get_camera_position, undistort_image, decoede_image, try2
+from camera_utils import detect_aruco, get_camera_position, undistort_image, decode_image, get_camera_pos_from_board
 
-# with open('./src/examples/latest (18).jpg', 'rb') as f:
-with open('./src/examples/capture.jpg', 'rb') as f:
+with open('./src/examples/latest (19).jpg', 'rb') as f:
+# with open('./src/examples/capture.jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)
@@ -25,13 +25,9 @@ for y in range(grid.shape[0]):
     for x in range(grid.shape[1]):
         print(f"ID: {grid[y][x]} Position: {np.round(marker_grid[y][x], 3)}")
 
-img = decoede_image(image_bytes)
+img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
 # cv.imwrite('./src/examples/undistorted.jpg', undistorted)
-res_img, rvec, tvec = try2(img, MARKER_SIZE, MARKER_SPACING)
+res_img, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
 
-R, _ = cv.Rodrigues(rvec)
-
-# Camera position in board frame
-camera_position = -R.T @ tvec
-print("Camera position relative to board:", camera_position.flatten())
+print("Camera position relative to board:", camera_position)
