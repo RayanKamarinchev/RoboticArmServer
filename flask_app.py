@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 import io
 
-from camera_utils import decode_image, get_camera_pos_from_board
+from src.camera_utils import decode_image, get_camera_pos_from_board
 from src.movement import get_move_angles, get_initial_angles
 
 app = Flask(__name__)
@@ -14,6 +14,8 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 angles = get_initial_angles()
+print("Initial angles:")
+print(angles)
 
 
 @app.route('/get_position', methods=['POST'])
@@ -59,8 +61,8 @@ def index():
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
+    print("Sending angles:", angles)
     return jsonify(angles), 200
-
 
 if __name__ == '__main__':
     app.run()

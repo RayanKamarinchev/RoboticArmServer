@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 from camera_utils import detect_aruco, get_camera_position, undistort_image, decode_image, get_camera_pos_from_board
 
-with open('./src/examples/latest (19).jpg', 'rb') as f:
+with open('./src/examples/empty.jpg', 'rb') as f:
 # with open('./src/examples/capture.jpg', 'rb') as f:
     image_bytes = f.read()
 
