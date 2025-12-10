@@ -20,6 +20,8 @@ print(angles)
 
 @app.route('/get_position', methods=['POST'])
 def receive_image():
+    global angles
+    
     if 'imageFile' not in request.files:
         print("FILES:", request.files)
         return jsonify({"error": "No file part"}), 400
@@ -61,6 +63,8 @@ def index():
 
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
+    global angles
+    
     print("Sending angles:", angles)
     return jsonify(angles), 200
 

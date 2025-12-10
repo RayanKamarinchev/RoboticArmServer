@@ -79,10 +79,10 @@ def get_all_markers(corners, ids, marker_positions, marker_size=0.036):
         return None, None
     
     marker_corners_3d = np.array([
-        [0, 0, 0],
-        [ marker_size,  0, 0],
-        [ marker_size, -marker_size, 0],
-        [0, -marker_size, 0]
+        [0, 0, 0],                 # top-left
+        [marker_size, 0, 0],       # top-right
+        [marker_size, marker_size, 0],  # bottom-right
+        [0, marker_size, 0]        # bottom-left
     ], dtype=np.float32)
 
     all_obj = []
@@ -95,11 +95,14 @@ def get_all_markers(corners, ids, marker_positions, marker_size=0.036):
         marker_origin = np.array(marker_positions[marker_id], dtype=np.float32)
         obj_points = marker_corners_3d + marker_origin
 
-        all_obj.extend(obj_points)
-        all_img.extend(corners[i][0].astype(np.float32)) 
+        all_obj.append(obj_points)
+        all_img.append(corners[i][0].astype(np.float32)) 
     
-    all_obj = np.array(all_obj, dtype=np.float32)
-    all_img = np.array(all_img, dtype=np.float32)
+    if len(all_obj) == 0:
+        return None, None
+
+    all_obj = np.vstack(all_obj)
+    all_img = np.vstack(all_img)
 
     return all_obj, all_img
 

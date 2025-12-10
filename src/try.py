@@ -28,6 +28,7 @@ for y in range(grid.shape[0]):
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
 # cv.imwrite('./src/examples/undistorted.jpg', undistorted)
-res_img, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
+# res_img, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
+res_img, camera_position = get_camera_position(img, ids, marker_positions, MARKER_SIZE)
 
 print("Camera position relative to board:", camera_position)
