@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from camera_utils import detect_aruco, get_camera_position, undistort_image, decode_image
+from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
 
 # with open('./src/examples/empty.jpg', 'rb') as f:
 with open('./src/examples/latest (18).jpg', 'rb') as f:
@@ -16,14 +16,11 @@ with open('./src/examples/latest (18).jpg', 'rb') as f:
 MARKER_SIZE=0.036  # in meters
 MARKER_SPACING=0.005
 
-grid = np.arange(0, 20).reshape((5,4))
-marker_grid = [[[(MARKER_SIZE+MARKER_SPACING)*x, (MARKER_SIZE+MARKER_SPACING)*y, 0] for x in range(0,4)] for y in range(0,5)]
-marker_positions = {grid[y][x]: marker_grid[y][x] for y in range(grid.shape[0]) for x in range(grid.shape[1])}
-
 #print grid
 # for y in range(grid.shape[0]):
 #     for x in range(grid.shape[1]):
 #         print(f"ID: {grid[y][x]} Position: {np.round(marker_grid[y][x], 3)}")
+marker_positions = get_marker_positions(MARKER_SIZE, MARKER_SPACING)
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)

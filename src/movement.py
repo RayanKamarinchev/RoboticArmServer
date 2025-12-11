@@ -10,7 +10,7 @@ e = 0.067
 baseElevation = 0.13
 # Initial joint angles in degrees
 alpha = np.radians(100-7)
-beta = np.radians(100)
+beta = np.radians(110)
 gamma = np.radians(80)
 delta = np.radians(76)
 

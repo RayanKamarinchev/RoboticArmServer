@@ -1,10 +1,17 @@
 import cv2
 import cv2.aruco as aruco
+from matplotlib.pyplot import grid
 import numpy as np
 import io
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def get_marker_positions(marker_size, marker_spacing, rows=5, cols=4):
+    grid = np.arange(0, 20).reshape((rows,cols))
+    marker_grid = [[[(marker_size+marker_spacing)*x, (marker_size+marker_spacing)*y, 0] for x in range(0,cols)] for y in range(0,rows)]
+    marker_positions = {grid[y][x]: marker_grid[y][x] for y in range(grid.shape[0]) for x in range(grid.shape[1])}
+    return marker_positions
 
 def decode_image(image_bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
@@ -18,24 +25,6 @@ def undistort_image(image):
     undistorted = cv2.undistort(image, cameraMatrix, distCoeffs)
     img = cv2.rotate(undistorted, cv2.ROTATE_90_CLOCKWISE)
     return img
-
-def detect_aruco(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
-    parameters = aruco.DetectorParameters()
-    detector = aruco.ArucoDetector(aruco_dict, parameters)
-
-    corners, ids, _ = detector.detectMarkers(gray)
-
-    if ids is not None:
-        print("Detected ArUco IDs:", ids.flatten())
-        aruco.drawDetectedMarkers(img, corners, ids)
-    else:
-        print("No ArUco markers detected.")
-
-    cv2.imwrite('./src/examples/annotated_image1.jpg', img)
-    return img, ids, corners if ids is not None else []
 
 def get_camera_position(img, marker_positions, marker_size):
     img_copy = img.copy()
