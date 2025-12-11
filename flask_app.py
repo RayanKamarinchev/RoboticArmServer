@@ -71,8 +71,8 @@ def receive_data():
     instructions.append(["move", get_initial_angles()])
     instructions.append(["grip", 0])
     
-    print("Sending angles:", angles)
-    return jsonify(angles), 200
+    print("Sending instructions:", instructions)
+    return jsonify(instructions), 200
 
 if __name__ == '__main__':
     app.run()
