@@ -17,8 +17,7 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 angles = get_initial_angles()
-print("Initial angles:")
-print(angles)
+flag = False
 
 
 @app.route('/get_position', methods=['POST'])
@@ -38,6 +37,7 @@ def receive_image():
     img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     
     angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], angles)
+    flag = True
     return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
 
 @app.route('/latest.jpg')
@@ -65,7 +65,7 @@ def index():
 def receive_data():
     global angles
     instructions = []
-    if angles is None:
+    if not flag:
         return jsonify({"error": "No angles calculated yet."}), 400
     
     instructions.append(["move", *angles])
