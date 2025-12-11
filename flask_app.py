@@ -29,11 +29,10 @@ def receive_image():
     file = request.files['imageFile']
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
-    cv2.imwrite(LATEST_IMAGE_PATH, img)
 
     img = decode_image(file_bytes)
-    img, camera_position = get_camera_position(img)
     cv2.imwrite(LATEST_IMAGE_PATH, img)
+    img, camera_position = get_camera_position(img)
     
     angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], angles)
     return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
