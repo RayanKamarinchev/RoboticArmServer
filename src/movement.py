@@ -9,12 +9,12 @@ c = 0.127
 e = 0.067
 baseElevation = 0.13
 # Initial joint angles in degrees
-alpha = np.radians(100-7)
-beta = np.radians(110)
-gamma = np.radians(80)
 delta = np.radians(76)
 
 def get_initial_angles():
+    alpha = np.radians(100-7)
+    beta = np.radians(110)
+    gamma = np.radians(80)
     return [alpha, beta, gamma]
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):

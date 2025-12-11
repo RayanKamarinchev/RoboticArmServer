@@ -64,6 +64,12 @@ def index():
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
     global angles
+    instructions = []
+    instructions.append(["move", angles])
+    instructions.append(["grip", 1])
+    instructions.append(["wait", 5])
+    instructions.append(["move", get_initial_angles()])
+    instructions.append(["grip", 0])
     
     print("Sending angles:", angles)
     return jsonify(angles), 200
