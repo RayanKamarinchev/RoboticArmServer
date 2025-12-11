@@ -4,10 +4,13 @@ import os
 from datetime import datetime
 import io
 
-from src.camera_utils import decode_image, get_camera_position
+from src.camera_utils import decode_image, get_camera_position, get_marker_positions
 from src.movement import get_move_angles, get_initial_angles
 
 app = Flask(__name__)
+
+MARKER_SIZE=0.036
+MARKER_SPACING=0.005
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
@@ -32,7 +35,7 @@ def receive_image():
 
     img = decode_image(file_bytes)
     cv2.imwrite(LATEST_IMAGE_PATH, img)
-    img, camera_position = get_camera_position(img)
+    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     
     angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], angles)
     return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
