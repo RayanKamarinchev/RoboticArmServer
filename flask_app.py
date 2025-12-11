@@ -65,6 +65,9 @@ def index():
 def receive_data():
     global angles
     instructions = []
+    if angles is None:
+        return jsonify({"error": "No angles calculated yet."}), 400
+    
     instructions.append(["move", angles])
     instructions.append(["grip", 1])
     instructions.append(["wait", 5])
