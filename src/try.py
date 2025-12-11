@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
-from camera_utils import detect_aruco, get_camera_position, undistort_image, decode_image, get_camera_pos_from_board
+from camera_utils import detect_aruco, get_camera_position, undistort_image, decode_image
 
 # with open('./src/examples/empty.jpg', 'rb') as f:
-with open('./src/examples/capture.jpg', 'rb') as f:
+with open('./src/examples/latest (18).jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)
@@ -21,14 +21,27 @@ marker_grid = [[[(MARKER_SIZE+MARKER_SPACING)*x, (MARKER_SIZE+MARKER_SPACING)*y,
 marker_positions = {grid[y][x]: marker_grid[y][x] for y in range(grid.shape[0]) for x in range(grid.shape[1])}
 
 #print grid
-for y in range(grid.shape[0]):
-    for x in range(grid.shape[1]):
-        print(f"ID: {grid[y][x]} Position: {np.round(marker_grid[y][x], 3)}")
+# for y in range(grid.shape[0]):
+#     for x in range(grid.shape[1]):
+#         print(f"ID: {grid[y][x]} Position: {np.round(marker_grid[y][x], 3)}")
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
-# cv.imwrite('./src/examples/undistorted.jpg', undistorted)
-# res_img, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
-res_img, camera_position = get_camera_position(img, ids, marker_positions, MARKER_SIZE)
+res_img1, camera_position = get_camera_position(img, marker_positions, MARKER_SIZE)
+# res_img2, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
+
+cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
+# cv.imwrite('./src/examples/annotated_image_2.jpg', res_img2)
+
 
 print("Camera position relative to board:", camera_position)
+
+
+#test marker count
+all_marker_positions = marker_positions.copy()
+
+_, ground_truth = get_camera_position(img, all_marker_positions, MARKER_SIZE)
+for i in range(0, 19):
+    marker_positions.pop(i)
+    _, estimated = get_camera_position(img, marker_positions, MARKER_SIZE)
+    print(f"Removed marker {i}, difference: {np.linalg.norm(np.array(ground_truth)-np.array(estimated))} meters")

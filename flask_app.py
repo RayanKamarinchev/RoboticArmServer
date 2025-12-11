@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 import io
 
-from src.camera_utils import decode_image, get_camera_pos_from_board
+from src.camera_utils import decode_image, get_camera_position
 from src.movement import get_move_angles, get_initial_angles
 
 app = Flask(__name__)
@@ -31,7 +31,7 @@ def receive_image():
     print("Received:", len(file_bytes), "bytes")
 
     img = decode_image(file_bytes)
-    img, camera_position = get_camera_pos_from_board(img)
+    img, camera_position = get_camera_position(img)
     
     print("start file writing")
     cv2.imwrite(LATEST_IMAGE_PATH, img)

@@ -9,9 +9,9 @@ c = 0.127
 e = 0.067
 baseElevation = 0.13
 # Initial joint angles in degrees
-alpha = np.radians(88)
-beta = np.radians(178)
-gamma = np.radians(74)
+alpha = np.radians(100-7)
+beta = np.radians(100)
+gamma = np.radians(80)
 delta = np.radians(76)
 
 def get_initial_angles():
