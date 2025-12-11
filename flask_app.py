@@ -74,7 +74,7 @@ def receive_data():
     instructions.append(["move", *angles])
     instructions.append(["grip", 1])
     instructions.append(["wait", 5])
-    instructions.append(["move", get_initial_angles()])
+    instructions.append(["initial"])
     instructions.append(["grip", 0])
     
     print("Sending instructions:", instructions)
