@@ -23,6 +23,7 @@ flag = False
 @app.route('/get_position', methods=['POST'])
 def receive_image():
     global angles
+    global flag
     
     if 'imageFile' not in request.files:
         print("FILES:", request.files)
@@ -64,6 +65,8 @@ def index():
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
     global angles
+    global flag
+    
     instructions = []
     if not flag:
         return jsonify({"error": "No angles calculated yet."}), 400
