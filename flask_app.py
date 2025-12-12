@@ -36,7 +36,7 @@ def receive_image():
     cv2.imwrite(LATEST_IMAGE_PATH, img)
     img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     
-    angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], angles)
+    angles = get_move_angles(camera_position, [0.2, camera_position[1], 0.05], get_initial_angles())
     instructions.append(["move", *angles])
     instructions.append(["grip", 1])
     instructions.append(["wait", 5])
@@ -73,7 +73,6 @@ def receive_data():
     global instructions
     global flag
     
-    instructions = []
     if not flag:
         return jsonify({"error": "No angles calculated yet."}), 400
     
