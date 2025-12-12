@@ -45,7 +45,7 @@ def receive_image():
     
     flag = True
     
-    return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
+    return jsonify({"message": "OK", "camera_position": camera_position}), 200
 
 @app.route('/latest.jpg')
 def latest_image():
