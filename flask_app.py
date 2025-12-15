@@ -40,6 +40,7 @@ def receive_image():
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
     
     angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions = []
     instructions.append(["move", *angles])
     instructions.append(["grip", 1])
     instructions.append(["wait", 20])
