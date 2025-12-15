@@ -7,137 +7,139 @@ a = 0.117
 b = 0.122
 c = 0.127
 e = 0.067
+camera_offset = 0.016
 baseElevation = 0.13
 # Initial joint angles in degrees
 delta = np.radians(76)
+
 
 def get_initial_angles():
     alpha = np.radians(100-7)
     beta = np.radians(110)
     gamma = np.radians(80)
-    return [alpha, beta, gamma]
+    theta = np.radians(0)
+    psi = np.radians(0)
+    return [alpha, beta, gamma, theta, psi]
 
-def conv_camera_coords_to_gripper_coords(camera_coords, angles):
-    gripper_angle = angles[0] + angles[1] + angles[2]
-    camera_angle = gripper_angle + delta
-    camera_vertical_change = math.sin(camera_angle)  * e
-    camera_horizontal_change = math.cos(camera_angle) * e
-    gripper__base_x = camera_coords[0] + camera_horizontal_change
-    gripper__base_z = camera_coords[2] - camera_vertical_change
+def get_arm_vectors(alpha, beta, gamma, psi): 
+    l2_angle = alpha + beta - np.pi
+    #arm1
+    l1 = a * np.array([np.cos(alpha), 0, np.sin(beta)])
+    #arm2
+    l2 = b * np.array([np.cos(l2_angle),0, np.sin(l2_angle)])
+    #combined base arm
+    lb = l1 + l2
+    #angle above the xy plane (first z then x)
+    phi = np.arctan2(lb[2], lb[0])
+    #head arm angle relative to x
+    angle_sum = alpha + beta + gamma
+    #head elevation from base arm
+    epsilon = np.pi/2 + angle_sum - phi
+    #head arm components
+    lh_x = c * np.array([np.cos(angle_sum), 0, np.sin(angle_sum)])
+    lh_y = c * np.array([np.sin(epsilon) * np.cos(phi), np.cos(epsilon), np.sin(epsilon) * np.sin(phi)])
+    lh = np.cos(psi) * lh_x + np.sin(psi) * lh_y
     
-    gripper_horizontal_change = math.cos(gripper_angle) * c
-    gripper_vertical_change = math.sin(gripper_angle) * c
-    gripper_x = gripper__base_x - gripper_horizontal_change
-    gripper_z = gripper__base_z + gripper_vertical_change
+    return lb, lh
+
+def get_gripper_coords_and_cam_rotation_from_arm(angles):
+    alpha, beta, gamma, theta, psi = angles
     
-    return [gripper_x, camera_coords[1], gripper_z]
+    lb, lh = get_arm_vectors(alpha, beta, gamma, psi)
+    
+    arm_vector = lb + lh
+    #calculating the rotation angle around the z axis
+    position = rotate_vec(arm_vector, theta)
+    #calculate camera angles and rotation
+    base_arm_rotated = rotate_vec(lb, theta)
+    head_rotated = position-base_arm_rotated
+    azimuth = np.arctan2(head_rotated[1], head_rotated[0])
+    radius = np.sqrt(head_rotated[0]**2 + head_rotated[1]**2)
+    elevation = np.arctan2(head_rotated[2], radius)
+    rotation = psi
+    
+    position[2] += baseElevation
+    return (position, [azimuth, elevation, rotation])
 
-def x_from_arm(angles):
-    return a * np.cos(angles[0]) - b * np.cos(angles[0] + angles[1]) + c * np.cos(angles[0] + angles[1] + angles[2])
+def rotate_vec(vec, theta):
+    vec_already_rotated = np.arctan2(vec[1], vec[0])
+    full_rotation_angle = vec_already_rotated + theta
+    radius = vec[0]/np.cos(vec_already_rotated)
+    return np.array([radius*np.cos(full_rotation_angle), radius*np.sin(full_rotation_angle), vec[2]])
 
-def z_from_arm(angles):
-    return a * np.sin(angles[0]) - b * np.sin(angles[0] + angles[1]) + c * np.sin(angles[0] + angles[1] + angles[2]) + baseElevation
-
-def get_gripper_coords_from_arm(angles):
-    z = z_from_arm(angles)
-    x = x_from_arm(angles)
-    return [x, 0, z]
-
-def move_to_position(initial_gripper_coords_from_base, initial_angles, desired_coords):
+def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords):
     x, y, z = desired_coords
+    initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
     
-    initial_arm_x, _, initial_arm_z = get_gripper_coords_from_arm(initial_angles)
-    
     def objective(vars):
-        alpha, beta, gamma = vars
-        # Equation residuals
-        eq1 = z_from_arm(vars) - z
-        eq2 = initial_gripper_coords_from_base[0] - (x_from_arm(vars) - initial_arm_x) - x
+        position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
+        position_in_space = np.array([initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - position_from_arm[0], position_from_arm[1], position_from_arm[2]])
+        position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
+        #TODO camera difference
+        penalty = np.abs(vars[3]) + np.abs(vars[4])*3
 
-        total_angle_deg = np.degrees(x + y + z)
-        penalty = (total_angle_deg - 270) ** 2 # TODO review penalty
+        return position_diff + 1e-4 * penalty
 
-        return eq1 ** 2 + eq2 ** 2 + 1e-8 * penalty
-
-    def constraintJoint1(vars):
-        alpha, beta, gamma = vars
-        return np.degrees(alpha) + 7
-
-    def constraintJointUpper1(vars):
-        alpha, beta, gamma = vars
-        return 173 - np.degrees(alpha)
-
-    def constraintJoint2(vars):
-        alpha, beta, gamma = vars
-        return np.degrees(beta) - 35
-
-    def constraintJointUpper2(vars):
-        alpha, beta, gamma = vars
-        return 215 - np.degrees(beta)
-
-    def constraintJoint3(vars):
-        alpha, beta, gamma = vars
-        return np.degrees(gamma) - 74
-
-    def constraintJointUpper3(vars):
-        alpha, beta, gamma = vars
-        return 254 - np.degrees(gamma)
-
-    # newJointAngle2 = math.acos((joint1Len**2 + joint2Len**2 - newZ**2)/(2*joint1Len*joint2Len))
-    # oldJointAngle2 = math.acos((joint1Len**2 + joint2Len**2 - z**2)/(2*joint1Len*joint2Len))
-    #
-    # newJointAngle1 = joint2Len * math.sin(newJointAngle2) / newZ
-    # print(math.sin(newJointAngle2))
-    # oldJointAngle1 = joint2Len * math.sin(oldJointAngle2) / z
-    #
-    # return [0,math.degrees(newJointAngle1-oldJointAngle1), math.degrees(oldJointAngle2 - newJointAngle2), 0, 0, 0]
-    # Results
-
-    # Bounds are optional but can help convergence
-    bounds = [(0, 2 * np.pi)] * 3
+    bounds = [
+        (np.radians(-7), np.radians(-7+180)),       # alpha
+        (np.radians(35), np.radians(35+180)),       # beta
+        (np.radians(74), np.radians(74+180)),       # gamma
+        (np.radians(-150), np.radians(-150+180)),   # theta
+        (np.radians(-30), np.radians(-30+180))      # psi
+    ]
 
     # Solve
     result = minimize(
         objective,
         initial_angles,
         bounds=bounds,
-        constraints=[
-            {'type': 'ineq', 'fun': constraintJoint1},
-            {'type': 'ineq', 'fun': constraintJointUpper1},
-            {'type': 'ineq', 'fun': constraintJoint2},
-            {'type': 'ineq', 'fun': constraintJointUpper2},
-            {'type': 'ineq', 'fun': constraintJoint3},
-            {'type': 'ineq', 'fun': constraintJointUpper3},
-        ]
     )
 
     if result.success:
-        alpha_opt, beta_opt, gamma_opt = result.x
+        alpha, beta, gamma, theta, psi  = result.x
         print("Solution found:")
-        print(f"alpha = {np.degrees(alpha_opt):.2f}°")
-        print(f"beta = {np.degrees(beta_opt):.2f}°")
-        print(f"gamma = {np.degrees(gamma_opt):.2f}°")
-        print(f"alpha + beta + gamma = {np.degrees(alpha_opt + beta_opt + gamma_opt):.2f}°")
+        print(f"alpha = {np.degrees(alpha):.2f}°")
+        print(f"beta = {np.degrees(beta):.2f}°")
+        print(f"gamma = {np.degrees(gamma):.2f}°")
+        print(f"theta = {np.degrees(theta):.2f}°")
+        print(f"psi = {np.degrees(psi):.2f}°")
+        
+        pos, cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(result.x)
+        print(f"Initial gripper position from arm", initial_gripper_position_from_arm)
+        print(f"Initial gripper position in space", initial_gripper_position_in_space)
+        print(pos[0])
+        pos[0] = initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - pos[0]
+        print(f"Desired x: {x}")
+        print(f"Result x: {pos[0]}")
+        
+        print(f"Desired y: {y}")
+        print(f"Result y: {pos[1]}")
         
         print(f"Desired z: {z}")
-        # print(f"Initial z: {initial_gripper_coords_from_base[2]}")
-        print(f"Result z: {z_from_arm([alpha_opt, beta_opt, gamma_opt])}")
-        
-        print(f"Desired x: {x}")
-        # print(f"X from arm: {x_from_arm([alpha_opt, beta_opt, gamma_opt])}")
-        # print(f"Initial arm x: {initial_arm_x}")
-        # print(f"Initial gripper x from base: {initial_gripper_coords_from_base[0]}")
-        print(f"Result x: {initial_gripper_coords_from_base[0] - (x_from_arm([alpha_opt, beta_opt, gamma_opt]) - initial_arm_x)}")
-        
-        print(f"Penalty: {(((alpha_opt + beta_opt + gamma_opt) - 270) ** 2)* 1e-8}")
+        print(f"Result z: {pos[2]}")
     else:
         print("Optimization failed:", result.message)
 
-    return [alpha_opt, beta_opt, gamma_opt]
+    return [theta, alpha, beta, psi, gamma]
 
 def get_move_angles(camera_coords, target_coords, current_angles):
-    gripper_coords = conv_camera_coords_to_gripper_coords(camera_coords, current_angles)
-    degrees = move_to_position(gripper_coords, current_angles, target_coords)
-    return degrees
+    gripper_coords_in_space = conv_camera_coords_to_gripper_coords(camera_coords, current_angles)
+    print(gripper_coords_in_space, "gripper coords in space")
+    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords)
+    return angles
 
+def conv_camera_coords_to_gripper_coords(camera_coords, angles):
+    #TODO
+    gripper_angle = angles[0] + angles[1] + angles[2]
+    camera_angle = gripper_angle + delta
+    
+    _, arm_head = get_arm_vectors(angles[0], angles[1], angles[2], angles[4])
+    _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4])
+    camera_vector_normalized = camera_vector_direction * e / c
+    caemra_offset = np.cross(camera_vector_normalized, arm_head)
+    caemra_offset_normalized = caemra_offset / np.linalg.norm(caemra_offset) * camera_offset
+    
+    gripper_position = camera_coords-caemra_offset_normalized-camera_vector_normalized+arm_head
+    
+    return gripper_position

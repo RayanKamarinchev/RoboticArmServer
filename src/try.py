@@ -3,7 +3,7 @@ import numpy as np
 from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
 
 # with open('./src/examples/empty.jpg', 'rb') as f:
-with open('./src/examples/latest (18).jpg', 'rb') as f:
+with open('./src/examples/latest.jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)

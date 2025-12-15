@@ -1,7 +1,14 @@
-camera_coords = [0.49574684, 0.0616682, 0.42840817]
-desired_coords = [0.2, camera_coords[1], 0.05]
-degrees = get_move_angles(camera_coords, desired_coords, [alpha, beta, gamma])
-alpha, beta, gamma = degrees
-print(a * np.sin(alpha) - b * np.sin(alpha + beta) + c * np.sin(alpha + beta + gamma) + baseElevation)
-print(a * np.cos(alpha) - b * np.cos(alpha + beta) + c * np.cos(alpha + beta + gamma))
-print("Final Angles:", [np.degrees(alpha), np.degrees(beta), np.degrees(gamma)])
+from movement import get_move_angles, get_initial_angles, get_gripper_coords_and_cam_rotation_from_arm, conv_camera_coords_to_gripper_coords
+import numpy as np
+
+camera_coords = [0.1343155369863135, 0.04369305141274703, 0.2867105330044601]
+# desired_coords = [0.2, camera_coords[1], 0.05]
+gripper_coors = conv_camera_coords_to_gripper_coords(camera_coords, get_initial_angles())
+desired_coords = gripper_coors
+angles = get_move_angles(camera_coords, desired_coords, get_initial_angles())
+theta, alpha, beta, psi, gamma = angles
+
+print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, psi])[0])
+
+theta, alpha, beta, psi, gamma = get_initial_angles()
+print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, psi])[0])
