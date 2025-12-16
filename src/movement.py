@@ -74,7 +74,8 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     
     def objective(vars):
         position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
-        position_in_space = np.array([initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - position_from_arm[0], position_from_arm[1], position_from_arm[2]])
+        position_in_space = np.array([initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - position_from_arm[0],
+                                      initial_gripper_position_in_space[1] + position_from_arm[1], position_from_arm[2]])
         position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
         #TODO camera difference
         penalty = np.abs(vars[3]) + np.abs(vars[4])*3

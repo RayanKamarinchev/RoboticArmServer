@@ -8,7 +8,11 @@ desired_coords = gripper_coors
 angles = get_move_angles(camera_coords, desired_coords, get_initial_angles())
 theta, alpha, beta, psi, gamma = angles
 
+print("result")
+print(np.degrees([alpha, beta, gamma, theta, psi]))
 print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, psi])[0])
 
-theta, alpha, beta, psi, gamma = get_initial_angles()
+print("initial")
+alpha, beta, gamma, theta, psi = get_initial_angles()
+print(np.degrees([alpha, beta, gamma, theta, psi]))
 print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, psi])[0])
