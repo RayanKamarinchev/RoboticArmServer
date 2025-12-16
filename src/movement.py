@@ -15,7 +15,7 @@ delta = np.radians(76)
 
 def get_initial_angles():
     alpha = np.radians(100-7)
-    beta = np.radians(110)
+    beta = np.radians(100)
     gamma = np.radians(80)
     theta = np.radians(0)
     psi = np.radians(0)
@@ -24,7 +24,7 @@ def get_initial_angles():
 def get_arm_vectors(alpha, beta, gamma, psi): 
     l2_angle = alpha + beta - np.pi
     #arm1
-    l1 = a * np.array([np.cos(alpha), 0, np.sin(beta)])
+    l1 = a * np.array([np.cos(alpha), 0, np.sin(alpha)])
     #arm2
     l2 = b * np.array([np.cos(l2_angle),0, np.sin(l2_angle)])
     #combined base arm
@@ -61,11 +61,18 @@ def get_gripper_coords_and_cam_rotation_from_arm(angles):
     position[2] += baseElevation
     return (position, [azimuth, elevation, rotation])
 
+# def rotate_vec(vec, theta):
+#     vec_already_rotated = np.arctan2(vec[1], vec[0])
+#     full_rotation_angle = vec_already_rotated + theta
+#     radius = vec[0]/np.cos(vec_already_rotated)
+#     return np.array([radius*np.cos(full_rotation_angle), radius*np.sin(full_rotation_angle), vec[2]])
 def rotate_vec(vec, theta):
-    vec_already_rotated = np.arctan2(vec[1], vec[0])
-    full_rotation_angle = vec_already_rotated + theta
-    radius = vec[0]/np.cos(vec_already_rotated)
-    return np.array([radius*np.cos(full_rotation_angle), radius*np.sin(full_rotation_angle), vec[2]])
+    R = np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta),  np.cos(theta), 0],
+        [0,              0,             1]
+    ])
+    return R @ vec
 
 def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords):
     x, y, z = desired_coords
@@ -78,8 +85,8 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
                                       initial_gripper_position_in_space[1] + position_from_arm[1], position_from_arm[2]])
         position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
         #TODO camera difference
+        # penalty = np.linalg.norm(vars - initial_angles)
         penalty = np.abs(vars[3]) + np.abs(vars[4])*3
-
         return position_diff + 1e-4 * penalty
 
     bounds = [
@@ -109,8 +116,8 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         pos, cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(result.x)
         print(f"Initial gripper position from arm", initial_gripper_position_from_arm)
         print(f"Initial gripper position in space", initial_gripper_position_in_space)
-        print(pos[0])
         pos[0] = initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - pos[0]
+        pos[1] = initial_gripper_position_in_space[1] + pos[1]
         print(f"Desired x: {x}")
         print(f"Result x: {pos[0]}")
         
