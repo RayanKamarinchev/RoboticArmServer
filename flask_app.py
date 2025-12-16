@@ -23,6 +23,7 @@ flag = False
 @app.route('/get_position', methods=['POST'])
 def receive_image():
     global flag
+    global instructions
     
     if 'imageFile' not in request.files:
         print("FILES:", request.files)
