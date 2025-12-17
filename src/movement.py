@@ -151,8 +151,8 @@ def conv_camera_coords_to_gripper_coords(camera_coords, angles):
     caemra_offset = np.cross(camera_vector_normalized, arm_head)
     print(camera_vector_normalized, "cam vec")
     print(arm_head, "arm")
-    print(caemra_offset_normalized, "Camera offset")
     caemra_offset_normalized = caemra_offset / np.linalg.norm(caemra_offset) * camera_offset
+    print(caemra_offset_normalized, "Camera offset")
     
     gripper_position = camera_coords-caemra_offset_normalized-camera_vector_normalized+arm_head
     
