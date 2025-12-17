@@ -44,6 +44,7 @@ def get_arm_vectors(alpha, beta, gamma, psi):
 
 def get_gripper_coords_and_cam_rotation_from_arm(angles):
     alpha, beta, gamma, theta, psi = angles
+    psi=0
     
     lb, lh = get_arm_vectors(alpha, beta, gamma, psi)
     
