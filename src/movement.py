@@ -3,20 +3,20 @@ import numpy as np
 from scipy.optimize import minimize
 
 # Robot arm segment lengths in cm
-a = 0.117
-b = 0.122
-c = 0.127
-e = 0.067
+a = 0.1235 
+b = 0.122 
+c = 0.13
+e = 0.0699 #68-70
 camera_offset = 0.016
-baseElevation = 0.13
+baseElevation = 0.131 # 30-32
 # Initial joint angles in degrees
-delta = np.radians(76)
+delta = np.radians(78) #around 78
 
 
 def get_initial_angles():
-    alpha = np.radians(100-7)
-    beta = np.radians(100)
-    gamma = np.radians(80)
+    alpha = np.radians(90)
+    beta = np.radians(109) #+9
+    gamma = np.radians(79)#-1
     theta = np.radians(0)
     psi = np.radians(0)
     return [alpha, beta, gamma, theta, psi]
@@ -105,13 +105,13 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     )
 
     if result.success:
-        alpha, beta, gamma, theta, psi  = result.x
+        alpha, beta, gamma, theta, psi  = np.round(np.degrees(result.x))
         print("Solution found:")
-        print(f"alpha = {np.degrees(alpha):.2f}°")
-        print(f"beta = {np.degrees(beta):.2f}°")
-        print(f"gamma = {np.degrees(gamma):.2f}°")
-        print(f"theta = {np.degrees(theta):.2f}°")
-        print(f"psi = {np.degrees(psi):.2f}°")
+        print(f"alpha = {alpha:.2f}°")
+        print(f"beta = {beta:.2f}°")
+        print(f"gamma = {gamma:.2f}°")
+        print(f"theta = {theta:.2f}°")
+        print(f"psi = {psi:.2f}°")
         
         pos, cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(result.x)
         print(f"Initial gripper position from arm", initial_gripper_position_from_arm)
@@ -138,7 +138,6 @@ def get_move_angles(camera_coords, target_coords, current_angles):
     return angles
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):
-    #TODO
     gripper_angle = angles[0] + angles[1] + angles[2]
     camera_angle = gripper_angle + delta
     

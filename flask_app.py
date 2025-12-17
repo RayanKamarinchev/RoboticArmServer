@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, send_file
 import os
 from datetime import datetime
 import io
+import numpy as np
 
 from src.camera_utils import decode_image, get_camera_position, get_marker_positions
 from src.movement import get_move_angles, get_initial_angles, conv_camera_coords_to_gripper_coords
@@ -44,9 +45,14 @@ def receive_image():
     instructions = []
     instructions.append(["move", *angles])
     instructions.append(["grip", 1])
-    instructions.append(["wait", 20])
+    instructions.append(["wait", 10])
     instructions.append(["initial"])
     instructions.append(["grip", 0])
+    target_position = np.array([camera_position[0]+0.1, camera_position[1], camera_position[2]+0.1])
+    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 20])
+    
     
     flag = True
     
