@@ -141,6 +141,7 @@ def get_move_angles(camera_coords, target_coords, current_angles):
     return angles
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):
+    #ts shi
     gripper_angle = angles[0] + angles[1] + angles[2]
     camera_angle = gripper_angle + delta
     
@@ -148,6 +149,9 @@ def conv_camera_coords_to_gripper_coords(camera_coords, angles):
     _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4])
     camera_vector_normalized = camera_vector_direction * e / c
     caemra_offset = np.cross(camera_vector_normalized, arm_head)
+    print(camera_vector_normalized, "cam vec")
+    print(arm_head, "arm")
+    print(caemra_offset_normalized, "Camera offset")
     caemra_offset_normalized = caemra_offset / np.linalg.norm(caemra_offset) * camera_offset
     
     gripper_position = camera_coords-caemra_offset_normalized-camera_vector_normalized+arm_head
