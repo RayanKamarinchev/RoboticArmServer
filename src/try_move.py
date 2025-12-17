@@ -5,7 +5,7 @@ import numpy as np
 camera_coords = [0.14079992471301941, 0.06420141472130722, 0.28964597026748984]
 # gripper_coors = conv_camera_coords_to_gripper_coords(camera_coords, get_initial_angles())
 # desired_coords = gripper_coors
-desired_coords = [-0.007098067481364739, 0.07774760600851423, 0.3377893786785457]
+desired_coords = [0.006725431799177062, 0.07890125929550593, 0.33664803639568563]
 angles = get_move_angles(camera_coords, desired_coords, get_initial_angles())
 
 theta, alpha, beta, psi, gamma = angles
@@ -26,6 +26,6 @@ print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, p
 
 
 #another test
-theta, alpha, beta, psi, gamma = np.radians([12.0, 66.0, 166.0, -19.0, 139.0])
+theta, alpha, beta, psi, gamma = np.radians([4.0, 79.0, 149.0, 0.0, 129.0])
 print("real")
 print(get_gripper_coords_and_cam_rotation_from_arm([alpha, beta, gamma, theta, psi])[0])

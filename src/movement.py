@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 # Robot arm segment lengths in cm
-a = 0.12
+a = 0.121
 b = 0.123 
 c = 0.13
 e = 0.07#68-70
@@ -88,6 +88,7 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         #TODO camera difference
         # penalty = np.linalg.norm(vars - initial_angles)
         penalty = np.abs(vars[3]) + np.abs(vars[4])*3
+        # penalty = 5*vars[0]-np.round(vars[0])
         return position_diff + 1e-4 * penalty
 
     bounds = [
@@ -106,6 +107,7 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     )
 
     if result.success:
+        print(np.degrees(result.x))
         alpha, beta, gamma, theta, psi  = np.round(np.degrees(result.x))
         print("Solution found:")
         print(f"alpha = {alpha:.2f}°")

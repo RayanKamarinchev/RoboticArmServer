@@ -45,14 +45,37 @@ def receive_image():
     instructions = []
     instructions.append(["move", *angles])
     instructions.append(["grip", 1])
-    # instructions.append(["wait", 10])
-    instructions.append(["initial"])
+    instructions.append(["wait", 5])
+    
+    angles = get_move_angles(camera_position, camera_position, get_initial_angles())
+    instructions.append(["move", *angles])
     instructions.append(["grip", 0])
+    instructions.append(["wait", 10])
+    
     target_position = np.array([camera_position[0]-0.15, camera_position[1], camera_position[2]+0.05])
     angles = get_move_angles(camera_position, target_position, get_initial_angles())
     instructions.append(["move", *angles])
-    instructions.append(["wait", 20])
+    instructions.append(["wait", 10])
     
+    target_position = np.array([0, 0, 0.05])
+    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 10])
+    
+    target_position = np.array([0, 0.16, 0.05])
+    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 10])
+    
+    target_position = np.array([0.15, 0.8, 0.1])
+    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 10])
+    
+    target_position = np.array([0.15, 0.8, 0.3])
+    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 10])
     
     flag = True
     
