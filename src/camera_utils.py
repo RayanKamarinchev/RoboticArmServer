@@ -6,6 +6,8 @@ import io
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CAMERA_MATRIX_DIR = os.path.join(BASE_DIR, "camera_matrix.npy")
+DIST_COEFFS_DIR = os.path.join(BASE_DIR, "dist_coeffs.npy")
 
 def get_marker_positions(marker_size, marker_spacing, rows=5, cols=4):
     grid = np.arange(0, 20).reshape((rows,cols))
@@ -19,8 +21,8 @@ def decode_image(image_bytes):
     return img
 
 def undistort_image(image):
-    cameraMatrix = np.load(os.path.join(BASE_DIR, "camera_matrix.npy"))
-    distCoeffs   = np.load(os.path.join(BASE_DIR, "dist_coeffs.npy"))
+    cameraMatrix = np.load(CAMERA_MATRIX_DIR)
+    distCoeffs   = np.load(DIST_COEFFS_DIR)
     
     undistorted = cv2.undistort(image, cameraMatrix, distCoeffs)
     img = cv2.rotate(undistorted, cv2.ROTATE_90_CLOCKWISE)
@@ -28,8 +30,8 @@ def undistort_image(image):
 
 def get_camera_position(img, marker_positions, marker_size):
     img_copy = img.copy()
-    camera_matrix = np.load(os.path.join(BASE_DIR, "camera_matrix.npy"))
-    dist_coeffs = np.load(os.path.join(BASE_DIR, "dist_coeffs.npy"))
+    camera_matrix = np.load(CAMERA_MATRIX_DIR)
+    dist_coeffs = np.load(DIST_COEFFS_DIR)
 
     marker_corners, img_points = get_all_markers(img, marker_positions, marker_size)
     

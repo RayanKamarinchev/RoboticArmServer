@@ -1,4 +1,5 @@
 import math
+import os
 import numpy as np
 from scipy.optimize import minimize
 
@@ -107,28 +108,15 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     )
 
     if result.success:
+        print("angles:")
         print(np.degrees(result.x))
         alpha, beta, gamma, theta, psi  = np.round(np.degrees(result.x))
-        print("Solution found:")
-        print(f"alpha = {alpha:.2f}°")
-        print(f"beta = {beta:.2f}°")
-        print(f"gamma = {gamma:.2f}°")
-        print(f"theta = {theta:.2f}°")
-        print(f"psi = {psi:.2f}°")
         
         pos, cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(result.x)
         print(f"Initial gripper position from arm", initial_gripper_position_from_arm)
         print(f"Initial gripper position in space", initial_gripper_position_in_space)
         pos[0] = initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - pos[0]
         pos[1] = initial_gripper_position_in_space[1] + pos[1]
-        print(f"Desired x: {x}")
-        print(f"Result x: {pos[0]}")
-        
-        print(f"Desired y: {y}")
-        print(f"Result y: {pos[1]}")
-        
-        print(f"Desired z: {z}")
-        print(f"Result z: {pos[2]}")
     else:
         print("Optimization failed:", result.message)
 

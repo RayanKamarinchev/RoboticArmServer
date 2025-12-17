@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 import io
 import numpy as np
+import json
 
 from src.camera_utils import decode_image, get_camera_position, get_marker_positions
 from src.movement import get_move_angles, get_initial_angles, conv_camera_coords_to_gripper_coords
@@ -16,6 +17,7 @@ MARKER_SPACING=0.005
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+INSTRUCTIONS_DIR = os.path.join(UPLOAD_FOLDER, "instructions.json")
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 instructions = []
 flag = False
@@ -42,50 +44,15 @@ def receive_image():
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
     
     angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions = []
-    # instructions.append(["move", *angles])
-    # instructions.append(["grip", 1])
-    # instructions.append(["wait", 5])
+    with open(INSTRUCTIONS_DIR, "r") as f:
+        instructions_data = json.load(f)
     
-    angles = get_move_angles(camera_position, camera_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["grip", 0])
-    instructions.append(["wait", 5])
-    
-    # target_position = np.array([camera_position[0]-0.15, camera_position[1], camera_position[2]+0.05])
-    # angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    # instructions.append(["move", *angles])
-    # instructions.append(["wait", 10])
-    
-    target_position = np.array([0, 0, 0.05])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
-    
-    target_position = np.array([0, 0.16, 0.05])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
-    
-    target_position = np.array([0.12, 0.16, 0.05])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
-    
-    target_position = np.array([0.12, 0.08, 0.05])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
-    
-    target_position = np.array([0.12, 0.08, 0.3])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
-    
-    target_position = np.array([0.2, 0.08, 0.05])
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 5])
+    for line in instructions_data:
+        if line[0] is "move":
+            angles = get_move_angles(camera_position, line[1], get_initial_angles())
+            instructions.append(["move", *angles])
+        else:
+            instructions.append(line)
     
     flag = True
     
