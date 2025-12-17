@@ -6,17 +6,17 @@ from scipy.optimize import minimize
 a = 0.1235 
 b = 0.122 
 c = 0.13
-e = 0.0699 #68-70
+e = 0.07#68-70
 camera_offset = 0.016
-baseElevation = 0.131 # 30-32
+baseElevation = 0.13 # 30-32
 # Initial joint angles in degrees
-delta = np.radians(78) #around 78
+delta = np.radians(80) #around 78
 
 
 def get_initial_angles():
     alpha = np.radians(90)
-    beta = np.radians(109) #+9
-    gamma = np.radians(79)#-1
+    beta = np.radians(109)
+    gamma = np.radians(79)
     theta = np.radians(0)
     psi = np.radians(0)
     return [alpha, beta, gamma, theta, psi]
@@ -90,9 +90,9 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         return position_diff + 1e-4 * penalty
 
     bounds = [
-        (np.radians(-7), np.radians(-7+180)),       # alpha
-        (np.radians(35), np.radians(35+180)),       # beta
-        (np.radians(74), np.radians(74+180)),       # gamma
+        (np.radians(-10), np.radians(-10+180)),       # alpha
+        (np.radians(34), np.radians(34+180)),       # beta
+        (np.radians(73), np.radians(73+180)),       # gamma
         (np.radians(-150), np.radians(-150+180)),   # theta
         (np.radians(-30), np.radians(-30+180))      # psi
     ]
