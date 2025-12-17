@@ -7,7 +7,7 @@ a = 0.121
 b = 0.123 
 c = 0.13
 e = 0.07#68-70
-camera_offset = 0.016
+camera_offset_len = 0.016
 baseElevation = 0.132 # 30-32
 # Initial joint angles in degrees
 delta = np.radians(78) #around 78
@@ -148,12 +148,11 @@ def conv_camera_coords_to_gripper_coords(camera_coords, angles):
     _, arm_head = get_arm_vectors(angles[0], angles[1], angles[2], angles[4])
     _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4])
     camera_vector_normalized = camera_vector_direction * e / c
-    caemra_offset = np.cross(camera_vector_normalized, arm_head)
+    camera_offset = np.cross(arm_head, camera_vector_normalized)
     print(camera_vector_normalized, "cam vec")
     print(arm_head, "arm")
-    caemra_offset_normalized = caemra_offset / np.linalg.norm(caemra_offset) * camera_offset
+    caemra_offset_normalized = camera_offset / np.linalg.norm(camera_offset) * camera_offset_len
     print(caemra_offset_normalized, "Camera offset")
-    
-    gripper_position = camera_coords-caemra_offset_normalized-camera_vector_normalized+arm_head
-    
+    gripper_position = np.array([-camera_coords[0], camera_coords[1], camera_coords[2]])-caemra_offset_normalized-camera_vector_normalized+arm_head
+    gripper_position[0] = -gripper_position[0]
     return gripper_position
