@@ -13,31 +13,23 @@ app = Flask(__name__)
 
 MARKER_SIZE=0.036
 MARKER_SPACING=0.005
+BASELINE=0.02
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 INSTRUCTIONS_DIR = os.path.join(UPLOAD_FOLDER, "instructions.json")
 LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
+IMAGE_1_PATH = os.path.join(UPLOAD_FOLDER, "image1.jpg")
+IMAGE_2_PATH = os.path.join(UPLOAD_FOLDER, "image2.jpg")
+IMAGE_PATHS = [IMAGE_1_PATH, IMAGE_2_PATH]
 instructions = []
 flag = False
 
-
-@app.route('/get_position', methods=['POST'])
-def receive_image():
+def do_movement(img):
     global flag
     global instructions
     
-    if 'imageFile' not in request.files:
-        print("FILES:", request.files)
-        return jsonify({"error": "No file part"}), 400
-
-    file = request.files['imageFile']
-    file_bytes = file.read()
-    print("Received:", len(file_bytes), "bytes")
-
-    img = decode_image(file_bytes)
-    cv2.imwrite(LATEST_IMAGE_PATH, img)
     img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position)
     
@@ -61,7 +53,47 @@ def receive_image():
     
     flag = True
     
+    return camera_position
+
+@app.route('/get_position', methods=['POST'])
+def receive_image():
+    
+    if 'imageFile' not in request.files:
+        print("FILES:", request.files)
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['imageFile']
+    file_bytes = file.read()
+    print("Received:", len(file_bytes), "bytes")
+
+    img = decode_image(file_bytes)
+    cv2.imwrite(LATEST_IMAGE_PATH, img)
+    camera_position = do_movement(img)
+    
     return jsonify({"message": "OK", "camera_position": camera_position}), 200
+
+@app.route("/get_depth", methods=["POST"])
+def get_depth():
+    if 'imageFile' not in request.files:
+        print("FILES:", request.files)
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['imageFile']
+    image_num = file.filename[-1]
+    file_bytes = file.read()
+    print("Received:", len(file_bytes), "bytes")
+
+    img = decode_image(file_bytes)
+    cv2.imwrite(IMAGE_PATHS[image_num-1], img)
+    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    print("Camera position:", camera_position)
+    
+    if (image_num == 2):
+        do_movement()
+        
+    return jsonify({"message": "OK", "camera_position": camera_position}), 200
+    
+    
 
 @app.route('/latest.jpg')
 def latest_image():

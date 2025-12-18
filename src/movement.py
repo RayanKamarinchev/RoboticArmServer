@@ -129,7 +129,6 @@ def get_move_angles(camera_coords, target_coords, current_angles):
     return angles
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):
-    #ts shi
     gripper_angle = angles[0] + angles[1] + angles[2]
     camera_angle = gripper_angle + delta
     
