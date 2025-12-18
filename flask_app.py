@@ -53,7 +53,7 @@ def receive_image():
     instructions.append(["wait", 1])
     
     for line in instructions_data:
-        if line[0] is "move":
+        if line[0] == "move":
             angles = get_move_angles(camera_position, line[1], get_initial_angles())
             instructions.append(["move", *angles])
         else:
