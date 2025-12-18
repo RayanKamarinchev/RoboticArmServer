@@ -47,7 +47,12 @@ def receive_image():
     with open(INSTRUCTIONS_DIR, "r") as f:
         instructions_data = json.load(f)
     
-    for line in instructions_data:
+    instructions = []
+    
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 1])
+    
+    for line in instructions_data[0]:
         if line[0] is "move":
             angles = get_move_angles(camera_position, line[1], get_initial_angles())
             instructions.append(["move", *angles])
