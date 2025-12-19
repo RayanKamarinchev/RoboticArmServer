@@ -31,7 +31,7 @@ def do_movement(img):
     global instructions
     
     img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
-    print("Camera position:", camera_position)
+    print("Camera position:", camera_position) 
     
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
     
@@ -79,7 +79,7 @@ def get_depth():
         return jsonify({"error": "No file part"}), 400
 
     file = request.files['imageFile']
-    image_num = file.filename[-1]
+    image_num = int(file.filename.split('_')[-1].split('.')[0])
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
 
