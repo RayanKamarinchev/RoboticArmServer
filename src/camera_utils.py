@@ -104,3 +104,56 @@ def get_all_markers(img, marker_positions, marker_size=0.036):
     image_points = np.vstack(image_points)
 
     return marker_corners, image_points
+
+def get_depth_map(img_left, img_right):
+    markerPositions = get_marker_positions()
+    objPoints, imgPointsLeft = get_all_markers(img_left, markerPositions)
+    objPoints, imgPointsRigth = get_all_markers(img_right, markerPositions)
+    
+    cameraMatrix = np.load(CAMERA_MATRIX_DIR)
+    distCoeffs   = np.load(DIST_COEFFS_DIR)
+    
+    h, w = img_left.shape[:2]
+    imageSize = (w, h)
+    
+    rms, cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2, R, T, E, F = cv2.stereoCalibrate(
+        objPoints,
+        imgPointsLeft,
+        imgPointsRigth,
+        cameraMatrix, distCoeffs,
+        cameraMatrix, distCoeffs,
+        imageSize,
+        flags=cv2.CALIB_FIX_INTRINSIC
+    )
+    
+    print("RMS: ", rms)
+    
+    R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(
+        cameraMatrix1, distCoeffs1,
+        cameraMatrix2, distCoeffs2,
+        imageSize,
+        R, T,
+        flags=cv2.CALIB_ZERO_DISPARITY,
+        alpha=0
+    )
+    
+    map1x, map1y = cv2.initUndistortRectifyMap(
+        cameraMatrix1, distCoeffs1, R1, P1, imageSize, cv2.CV_16SC2
+    )
+
+    map2x, map2y = cv2.initUndistortRectifyMap(
+        cameraMatrix2, distCoeffs2, R2, P2, imageSize, cv2.CV_16SC2
+    )
+    
+    rectL = cv2.remap(img_left, map1x, map1y, cv2.INTER_LINEAR)
+    rectR = cv2.remap(img_right, map2x, map2y, cv2.INTER_LINEAR)
+    
+    for y in range(0, rectL.shape[0], 40):
+        cv2.line(rectL, (0,y), (rectL.shape[1],y), (0,255,0), 1)
+    
+    cv2.imwrite("rectified_img.jpg", rectL)
+    print("RMS:", rms)
+    print("T:", T.ravel())
+    
+    
+    

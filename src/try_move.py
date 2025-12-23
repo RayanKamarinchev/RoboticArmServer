@@ -5,7 +5,7 @@ import numpy as np
 camera_coords = [0.13837233502768634, 0.047776567903755555, 0.2875156334661047]
 gripper_coors = conv_camera_coords_to_gripper_coords(camera_coords, get_initial_angles())
 target_coords = gripper_coors
-target_coords[1] -= 0.02
+target_coords[1] -= 0.01
 
 angles = get_move_angles(camera_coords, target_coords, get_initial_angles())
 theta, alpha, beta, psi, gamma = angles

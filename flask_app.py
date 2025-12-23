@@ -26,7 +26,7 @@ IMAGE_PATHS = [IMAGE_1_PATH, IMAGE_2_PATH]
 instructions = []
 flag = False
 
-def do_movement(img):
+def prepare_instructions(img):
     global flag
     global instructions
     
@@ -51,7 +51,7 @@ def do_movement(img):
         else:
             instructions.append(line)
     
-    flag = True
+    flag = True 
     
     return camera_position
 
@@ -68,9 +68,32 @@ def receive_image():
 
     img = decode_image(file_bytes)
     cv2.imwrite(LATEST_IMAGE_PATH, img)
-    camera_position = do_movement(img)
+    camera_position = prepare_instructions(img)
     
     return jsonify({"message": "OK", "camera_position": camera_position}), 200
+
+@app.route('/debug', methods=['POST'])
+def debug():
+    if 'imageFile' not in request.files:
+        print("FILES:", request.files)
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['imageFile']
+    angles_str = request.form.get("angles")
+    file_bytes = file.read()
+    print("Received:", len(file_bytes), "bytes")
+
+    img = decode_image(file_bytes)
+    
+    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    print("Camera position:", camera_position) 
+    img_name = f"image_{angles_str}.jpg"
+    image_save_dir = os.path.joint(UPLOAD_FOLDER, img_name)
+
+    with open("data.csv", "a") as f:
+        f.write(f"{camera_position},{image_save_dir},{angles_str}\n")
+    
+    return jsonify({"message": "Debug endpoint reached"}), 200
 
 @app.route("/get_depth", methods=["POST"])
 def get_depth():
@@ -79,6 +102,7 @@ def get_depth():
         return jsonify({"error": "No file part"}), 400
 
     file = request.files['imageFile']
+    angles = request.form.get("angles")
     image_num = int(file.filename.split('_')[-1].split('.')[0])
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
@@ -89,7 +113,7 @@ def get_depth():
     print("Camera position:", camera_position)
     
     if (image_num == 2):
-        do_movement()
+        prepare_instructions(img)
         
     return jsonify({"message": "OK", "camera_position": camera_position}), 200
     
@@ -129,4 +153,4 @@ def receive_data():
     return jsonify(instructions), 200
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host="0.0.0.0", port=5000)
