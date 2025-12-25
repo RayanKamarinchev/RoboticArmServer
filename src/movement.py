@@ -76,14 +76,20 @@ def rotate_vec(vec, theta):
     ])
     return R @ vec
 
-def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords):
+def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords, azimuth):
     x, y, z = desired_coords
     initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
+    print("Initial camera rotation: ", initial_cam_rotation)
     
     def objective(vars):
         position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
-        position_in_space = np.array([initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - position_from_arm[0],
+        #convert from arm coordinate system to from board(in space) coordinate system
+        print("azim", azimuth)
+        x_movement = np.cos(azimuth - camera_angles[0])*(initial_gripper_position_from_arm[0] - position_from_arm[0])
+        y_movement = np.sin(azimuth - camera_angles[0])*(initial_gripper_position_from_arm[1] + position_from_arm[1])
+        
+        position_in_space = np.array([initial_gripper_position_in_space[0] + x_movement,
                                       initial_gripper_position_in_space[1] + position_from_arm[1], position_from_arm[2]])
         position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
         #TODO camera difference
@@ -122,10 +128,10 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
 
     return [theta, alpha, beta, psi, gamma]
 
-def get_move_angles(camera_coords, target_coords, current_angles):
+def get_move_angles(camera_coords, target_coords, current_angles, azimuth):
     gripper_coords_in_space = conv_camera_coords_to_gripper_coords(camera_coords, current_angles)
     print(gripper_coords_in_space, "gripper coords in space")
-    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords)
+    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords, azimuth)
     return angles
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):

@@ -55,7 +55,7 @@ def get_camera_position(img, marker_positions, marker_size):
     for p in proj.reshape(-1, 2):
         cv2.circle(img_copy, tuple(p.astype(int)), 3, (0, 0, 255), -1)
 
-    cv2.drawFrameAxes(img_copy, camera_matrix, dist_coeffs, rvec, tvec, 0.25)
+    cv2.drawFrameAxes(img_copy, camera_matrix, dist_coeffs, rvec, tvec, 0.2)
 
     error = np.mean(np.linalg.norm(img_points - proj.reshape(-1, 2), axis=1))
     print("Reprojection error:", error)
@@ -63,11 +63,19 @@ def get_camera_position(img, marker_positions, marker_size):
     R, _ = cv2.Rodrigues(rvec)
     camera_position = -R.T @ tvec
     camera_position = camera_position.flatten()
-
     #swapping boards x and y
     camera_position = [camera_position[1], camera_position[0], -camera_position[2]]
+    
+    camera_rotation = R.T
+    
+    forward = camera_rotation[:, 2]
 
-    return img_copy, camera_position
+    azimuth = np.arctan2(forward[1], forward[0])
+    azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+
+    print("Azimuth: ", azimuth)
+
+    return img_copy, camera_position, camera_rotation
 
 def get_all_markers(img, marker_positions, marker_size=0.036):
     dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)

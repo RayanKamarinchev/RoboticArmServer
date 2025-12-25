@@ -30,12 +30,12 @@ def prepare_instructions(img):
     global flag
     global instructions
     
-    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, azimuth = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position) 
     
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
     
-    angles = get_move_angles(camera_position, target_position, get_initial_angles())
+    angles = get_move_angles(camera_position, target_position, get_initial_angles(), azimuth)
     with open(INSTRUCTIONS_DIR, "r") as f:
         instructions_data = json.load(f)
     
@@ -46,7 +46,7 @@ def prepare_instructions(img):
     
     for line in instructions_data:
         if line[0] == "move":
-            angles = get_move_angles(camera_position, line[1], get_initial_angles())
+            angles = get_move_angles(camera_position, line[1], get_initial_angles(), azimuth)
             instructions.append(["move", *angles])
         else:
             instructions.append(line)
@@ -85,13 +85,14 @@ def debug():
 
     img = decode_image(file_bytes)
     
-    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
-    print("Camera position:", camera_position) 
+    img, camera_position, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    print("Camera position:", camera_position.tolist()) 
     img_name = f"image_{angles_str}.jpg"
-    image_save_dir = os.path.joint(UPLOAD_FOLDER, img_name)
+    image_save_dir = os.path.join(UPLOAD_FOLDER, img_name)
+    cv2.imwrite(image_save_dir, img)
 
-    with open("data.csv", "a") as f:
-        f.write(f"{camera_position},{image_save_dir},{angles_str}\n")
+    with open("src/data.csv", "a") as f:
+        f.write(f"{camera_position.tolist()},{image_save_dir},{angles_str}\n")
     
     return jsonify({"message": "Debug endpoint reached"}), 200
 

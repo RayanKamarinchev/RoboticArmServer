@@ -3,7 +3,8 @@ import numpy as np
 from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
 
 # with open('./src/examples/empty.jpg', 'rb') as f:
-with open('./src/examples/latest (3).jpg', 'rb') as f:
+# with open('./src/examples/latest (3).jpg', 'rb') as f:
+with open('./uploads/image_30.00_100.00_100.00_155.00_6.00_170.00.jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)
@@ -24,21 +25,51 @@ marker_positions = get_marker_positions(MARKER_SIZE, MARKER_SPACING)
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
-res_img1, camera_position = get_camera_position(img, marker_positions, MARKER_SIZE)
+res_img1, camera_position, camera_rotation = get_camera_position(img, marker_positions, MARKER_SIZE)
 # res_img2, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
 
 cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
 # cv.imwrite('./src/examples/annotated_image_2.jpg', res_img2)
 
 
+
+azimuth = np.arctan2(camera_position[1], camera_position[0])
+azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+print(np.degrees(azimuth), "az1")
+
+azimuth = np.arctan2(camera_position[0], camera_position[1])
+azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+print(np.degrees(azimuth), "az2")
+    
+forward = camera_rotation[:, 2]
+
+azimuth = np.arctan2(forward[1], forward[0])
+azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+print(np.degrees(azimuth), "az3")
+
+azimuth = np.arctan2(forward[0], forward[1])
+azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+print(np.degrees(azimuth), "az4")
+
+forward = camera_rotation @ np.array([0, 0, 1])  # camera optical axis
+
+# project onto ground plane
+forward[2] = 0
+forward /= np.linalg.norm(forward)
+
+azimuth = np.arctan2(forward[1], forward[0])
+print(np.degrees(azimuth), "az5")
+azimuth = np.arctan2(forward[0], forward[1])
+print(np.degrees(azimuth), "az6")
+
 print("Camera position relative to board:", camera_position)
 
 
 #test marker count
-all_marker_positions = marker_positions.copy()
+# all_marker_positions = marker_positions.copy()
 
-_, ground_truth = get_camera_position(img, all_marker_positions, MARKER_SIZE)
-for i in range(0, 19):
-    marker_positions.pop(i)
-    _, estimated = get_camera_position(img, marker_positions, MARKER_SIZE)
-    print(f"Removed marker {i}, difference: {np.linalg.norm(np.array(ground_truth)-np.array(estimated))} meters")
+# _, ground_truth, _ = get_camera_position(img, all_marker_positions, MARKER_SIZE)
+# for i in range(0, 19):
+#     marker_positions.pop(i)
+#     _, estimated, _ = get_camera_position(img, marker_positions, MARKER_SIZE)
+#     print(f"Removed marker {i}, difference: {np.linalg.norm(np.array(ground_truth)-np.array(estimated))} meters")
