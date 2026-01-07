@@ -9,6 +9,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CAMERA_MATRIX_DIR = os.path.join(BASE_DIR, "camera_matrix.npy")
 DIST_COEFFS_DIR = os.path.join(BASE_DIR, "dist_coeffs.npy")
 
+def angle_between(v1, v2):
+    v1 = v1 / np.linalg.norm(v1)
+    v2 = v2 / np.linalg.norm(v2)
+    dot = np.clip(np.dot(v1, v2), -1.0, 1.0)
+    return np.degrees(np.arccos(dot))
+
 def get_marker_positions(marker_size, marker_spacing, rows=5, cols=4):
     grid = np.arange(0, 20).reshape((rows,cols))
     marker_grid = [[[(marker_size+marker_spacing)*x, (marker_size+marker_spacing)*y, 0] for x in range(0,cols)] for y in range(0,rows)]
@@ -28,6 +34,7 @@ def undistort_image(image):
     img = cv2.rotate(undistorted, cv2.ROTATE_90_CLOCKWISE)
     return img
 
+
 def get_camera_position(img, marker_positions, marker_size):
     img_copy = img.copy()
     camera_matrix = np.load(CAMERA_MATRIX_DIR)
@@ -37,7 +44,7 @@ def get_camera_position(img, marker_positions, marker_size):
     
     if marker_corners is None or img_points is None:
         print("No markers detected or matched.")
-        return img_copy, None
+        return img_copy, None, None
 
     for i, point in enumerate(img_points):
         if i%2==0:
@@ -55,27 +62,76 @@ def get_camera_position(img, marker_positions, marker_size):
     for p in proj.reshape(-1, 2):
         cv2.circle(img_copy, tuple(p.astype(int)), 3, (0, 0, 255), -1)
 
-    cv2.drawFrameAxes(img_copy, camera_matrix, dist_coeffs, rvec, tvec, 0.2)
+    # cv2.drawFrameAxes(img_copy, camera_matrix, dist_coeffs, rvec, tvec, 0.2)
 
     error = np.mean(np.linalg.norm(img_points - proj.reshape(-1, 2), axis=1))
     print("Reprojection error:", error)
 
-    R, _ = cv2.Rodrigues(rvec)
-    camera_position = -R.T @ tvec
-    camera_position = camera_position.flatten()
     #swapping boards x and y
-    camera_position = [camera_position[1], camera_position[0], -camera_position[2]]
+    transform = np.array([
+        [0, 1,  0],
+        [1, 0,  0],
+        [0, 0, -1]
+    ])
     
-    camera_rotation = R.T
+    R, _ = cv2.Rodrigues(rvec)
+    camera_position = transform @ (-R.T @ tvec)
+    camera_position = camera_position.flatten()
     
-    forward = camera_rotation[:, 2]
+    # cam_ray = np.array([0, 0, 1], dtype=float) #transform @ ???
 
-    azimuth = np.arctan2(forward[1], forward[0])
+    # v = tvec.flatten()
+
+    # cam_ray /= np.linalg.norm(cam_ray)
+    # v /= np.linalg.norm(v)
+
+    # dot = np.clip(np.dot(cam_ray, v), -1.0, 1.0)
+    # angle_from_cam = np.degrees(np.arccos(dot))
+    # print(angle_from_cam, "Angle from cam")
+    
+    # y_axis_3d = np.float32([
+    #     [0, 0, 0],      # origin
+    #     [0, 0.1, 0],
+    #     [0, 0.2, 0]  # Y axis endpoint
+    # ])
+    # y_axis_2d, _ = cv2.projectPoints(
+    #     y_axis_3d,
+    #     rvec,
+    #     tvec,
+    #     camera_matrix,
+    #     dist_coeffs
+    # )
+    # y_axis_2d = y_axis_2d.reshape(-1, 2)
+
+    # origin_2d = y_axis_2d[0]
+    # test = y_axis_2d[1]
+    # y_endpoint_2d = y_axis_2d[2]
+
+    # print("Origin pixel:", origin_2d)
+    # print("Y axis pixel endpoint:", y_endpoint_2d)
+    # cv2.line(img_copy, tuple(map(int, origin_2d)), tuple(map(int, y_endpoint_2d)), color=(0, 255, 0), thickness=10)
+    # cv2.line(img_copy, tuple(map(int, origin_2d)), tuple(map(int, test)), color=(0, 0, 255), thickness=10)
+    # vec = y_endpoint_2d-origin_2d
+    # cam_angle = np.degrees(np.arctan2(vec[1], vec[0]))
+    
+    board_y = np.array([0, 1, 0])
+
+    board_y_cam = R @ board_y
+
+    v_xy = board_y_cam[:2]  # take X, Y
+
+    v_xy /= np.linalg.norm(v_xy)
+
+    # Angle relative to +X axis (or any reference)
+    cam_angle = np.degrees(np.arctan2(v_xy[1], v_xy[0]))
+    print(cam_angle)
+    
+    azimuth = np.arctan2(camera_position[1], camera_position[0])
     azimuth = (azimuth + 2*np.pi) % (2*np.pi)
+    azimuth = np.degrees(azimuth)
+    print(azimuth, "Azimuth")
 
-    print("Azimuth: ", azimuth)
-
-    return img_copy, camera_position, camera_rotation
+    return img_copy, camera_position, (azimuth, cam_angle)
 
 def get_all_markers(img, marker_positions, marker_size=0.036):
     dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)

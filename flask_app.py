@@ -23,8 +23,10 @@ LATEST_IMAGE_PATH = os.path.join(UPLOAD_FOLDER, "latest.jpg")
 IMAGE_1_PATH = os.path.join(UPLOAD_FOLDER, "image1.jpg")
 IMAGE_2_PATH = os.path.join(UPLOAD_FOLDER, "image2.jpg")
 IMAGE_PATHS = [IMAGE_1_PATH, IMAGE_2_PATH]
+DEBUG_DATA_PATH = "src/data.csv"
 instructions = []
 flag = False
+counter = 0
 
 def prepare_instructions(img):
     global flag
@@ -74,6 +76,7 @@ def receive_image():
 
 @app.route('/debug', methods=['POST'])
 def debug():
+    global counter
     if 'imageFile' not in request.files:
         print("FILES:", request.files)
         return jsonify({"error": "No file part"}), 400
@@ -85,14 +88,15 @@ def debug():
 
     img = decode_image(file_bytes)
     
-    img, camera_position, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img_new, camera_position, (azimuth_angle, cam_angle) = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position.tolist()) 
-    img_name = f"image_{angles_str}.jpg"
+    img_name = f"{counter}_image_{angles_str}.jpg"
+    counter+=1
     image_save_dir = os.path.join(UPLOAD_FOLDER, img_name)
     cv2.imwrite(image_save_dir, img)
 
-    with open("src/data.csv", "a") as f:
-        f.write(f"{camera_position.tolist()},{image_save_dir},{angles_str}\n")
+    with open(DEBUG_DATA_PATH, "a") as f:
+        f.write(f"{camera_position.tolist()},{image_save_dir},{angles_str},{azimuth_angle},{cam_angle}\n")
     
     return jsonify({"message": "Debug endpoint reached"}), 200
 
