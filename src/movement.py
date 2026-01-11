@@ -76,7 +76,7 @@ def rotate_vec(vec, theta):
     ])
     return R @ vec
 
-def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords, azimuth):
+def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords, coordinate_systems_angle):
     x, y, z = desired_coords
     initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
@@ -85,12 +85,15 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     def objective(vars):
         position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
         #convert from arm coordinate system to from board(in space) coordinate system
-        print("azim", azimuth)
-        x_movement = np.cos(azimuth - camera_angles[0])*(initial_gripper_position_from_arm[0] - position_from_arm[0])
-        y_movement = np.sin(azimuth - camera_angles[0])*(initial_gripper_position_from_arm[1] + position_from_arm[1])
+        print("Effective angle: ", coordinate_systems_angle- camera_angles[0])
+        x_movement = np.cos(coordinate_systems_angle - camera_angles[0])*(initial_gripper_position_from_arm[0] - position_from_arm[0])
+        y_movement = np.sin(coordinate_systems_angle - camera_angles[0])*(initial_gripper_position_from_arm[1] + position_from_arm[1])
+        print("Used angle: ", coordinate_systems_angle - camera_angles[0])
+        print("X movement: ", x_movement)
+        print("Y movement: ", y_movement)
         
         position_in_space = np.array([initial_gripper_position_in_space[0] + x_movement,
-                                      initial_gripper_position_in_space[1] + position_from_arm[1], position_from_arm[2]])
+                                      initial_gripper_position_in_space[1] + y_movement, position_from_arm[2]])
         position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
         #TODO camera difference
         # penalty = np.linalg.norm(vars - initial_angles)
@@ -128,10 +131,10 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
 
     return [theta, alpha, beta, psi, gamma]
 
-def get_move_angles(camera_coords, target_coords, current_angles, azimuth):
+def get_move_angles(camera_coords, target_coords, current_angles, coordinate_systems_angle):
     gripper_coords_in_space = conv_camera_coords_to_gripper_coords(camera_coords, current_angles)
     print(gripper_coords_in_space, "gripper coords in space")
-    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords, azimuth)
+    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords, coordinate_systems_angle)
     return angles
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles):

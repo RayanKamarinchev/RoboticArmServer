@@ -32,12 +32,11 @@ marker_positions = get_marker_positions(MARKER_SIZE, MARKER_SPACING)
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
-res_img1, camera_position, (azimuth, angle_from_cam) = get_camera_position(img, marker_positions, MARKER_SIZE)
+res_img1, camera_position, angle_from_cam = get_camera_position(img, marker_positions, MARKER_SIZE)
 # res_img2, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
 
 cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
 
-print("Azimuth", azimuth)
 print("Angle", angle_from_cam)
 
 # azimuth = np.arctan2(camera_position[0], camera_position[1])

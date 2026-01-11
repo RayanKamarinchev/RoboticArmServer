@@ -32,12 +32,12 @@ def prepare_instructions(img):
     global flag
     global instructions
     
-    img, camera_position, azimuth = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position) 
     
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
     
-    angles = get_move_angles(camera_position, target_position, get_initial_angles(), azimuth)
+    angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
     with open(INSTRUCTIONS_DIR, "r") as f:
         instructions_data = json.load(f)
     
@@ -59,12 +59,15 @@ def prepare_instructions(img):
 
 @app.route('/get_position', methods=['POST'])
 def receive_image():
-    
+    print("here")
     if 'imageFile' not in request.files:
+        print("here1")
         print("FILES:", request.files)
         return jsonify({"error": "No file part"}), 400
 
+    print("here2")
     file = request.files['imageFile']
+    print("here3")
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
 
@@ -88,7 +91,7 @@ def debug():
 
     img = decode_image(file_bytes)
     
-    img_new, camera_position, (azimuth_angle, cam_angle) = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position.tolist()) 
     img_name = f"{counter}_image_{angles_str}.jpg"
     counter+=1
@@ -96,7 +99,7 @@ def debug():
     cv2.imwrite(image_save_dir, img)
 
     with open(DEBUG_DATA_PATH, "a") as f:
-        f.write(f"{camera_position.tolist()},{image_save_dir},{angles_str},{azimuth_angle},{cam_angle}\n")
+        f.write(f"{camera_position.tolist()},{image_save_dir},{angles_str},{coordinate_systems_angle}\n")
     
     return jsonify({"message": "Debug endpoint reached"}), 200
 
