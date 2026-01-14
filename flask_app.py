@@ -48,7 +48,7 @@ def prepare_instructions(img):
     
     for line in instructions_data:
         if line[0] == "move":
-            angles = get_move_angles(camera_position, line[1], get_initial_angles(), azimuth)
+            angles = get_move_angles(camera_position, line[1], get_initial_angles(), coordinate_systems_angle)
             instructions.append(["move", *angles])
         else:
             instructions.append(line)
@@ -59,15 +59,11 @@ def prepare_instructions(img):
 
 @app.route('/get_position', methods=['POST'])
 def receive_image():
-    print("here")
     if 'imageFile' not in request.files:
-        print("here1")
         print("FILES:", request.files)
         return jsonify({"error": "No file part"}), 400
 
-    print("here2")
     file = request.files['imageFile']
-    print("here3")
     file_bytes = file.read()
     print("Received:", len(file_bytes), "bytes")
 
@@ -75,7 +71,7 @@ def receive_image():
     cv2.imwrite(LATEST_IMAGE_PATH, img)
     camera_position = prepare_instructions(img)
     
-    return jsonify({"message": "OK", "camera_position": camera_position}), 200
+    return jsonify({"message": "OK", "camera_position": camera_position.tolist()}), 200
 
 @app.route('/debug', methods=['POST'])
 def debug():
