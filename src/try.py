@@ -11,7 +11,8 @@ def angle_between(v1, v2):
 
 # with open('./src/examples/empty.jpg', 'rb') as f:
 # with open('./src/examples/latest (3).jpg', 'rb') as f:
-with open('./uploads/15_image_30.00_100.00_100.00_155.00_6.00_160.00.jpg', 'rb') as f:
+# with open('./uploads/15_image_30.00_100.00_100.00_155.00_6.00_160.00.jpg', 'rb') as f:
+with open('./uploads/latest.jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)

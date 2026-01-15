@@ -81,19 +81,21 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
     print("Initial camera rotation: ", initial_cam_rotation)
-    coordinate_systems_angle = np.radians(coordinate_systems_angle)
+    coordinate_systems_angle = -np.radians(coordinate_systems_angle)
     print("Angle: ", coordinate_systems_angle)
-    
+    arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
+    print("Arm angle", np.degrees(arm_angle))
+    coordinate_systems_angle -= arm_angle
     def objective(vars):
         position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
         #convert from arm coordinate system to from board(in space) coordinate system
-        x_movement = np.cos(coordinate_systems_angle)*(initial_gripper_position_from_arm[0] - position_from_arm[0])
-        y_movement = np.cos(coordinate_systems_angle)*(-initial_gripper_position_from_arm[1] + position_from_arm[1])
+        x_movement = initial_gripper_position_from_arm[0] + np.cos(coordinate_systems_angle)*initial_gripper_position_in_space[0] + np.sin(coordinate_systems_angle)*initial_gripper_position_in_space[1]
+        y_movement = np.sin(coordinate_systems_angle)*initial_gripper_position_in_space[0]-np.cos(coordinate_systems_angle)*initial_gripper_position_in_space[1] - initial_gripper_position_from_arm[1]
         
-        position_in_space = np.array([initial_gripper_position_in_space[0] + x_movement,
-                                      initial_gripper_position_in_space[1] - initial_gripper_position_from_arm[1]+position_from_arm[1],
+        position_in_space = np.array([x_movement - position_from_arm[0],
+                                      y_movement - position_from_arm[1],
                                       position_from_arm[2]])
-        position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
+        position_diff = np.linalg.norm(position_in_space-np.array([x*np.cos(coordinate_systems_angle),y*np.cos(coordinate_systems_angle),z]))
         #TODO camera difference
         # penalty = np.linalg.norm(vars - initial_angles)
         penalty = np.abs(vars[3]) + np.abs(vars[4])*3
