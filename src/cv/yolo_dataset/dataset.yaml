@@ -1,0 +1,106 @@
+names:
+  0: Adhesive tape
+  1: Apple
+  2: Ball
+  3: Balloon
+  4: Beer
+  5: Bicycle wheel
+  6: Bird
+  7: Book
+  8: Boot
+  9: Bottle
+  10: Bowl
+  11: Box
+  12: Boy
+  13: Briefcase
+  14: Cake
+  15: Camera
+  16: Car
+  17: Carnivore
+  18: Cat
+  19: Chest of drawers
+  20: Christmas tree
+  21: Clothing
+  22: Coffee
+  23: Coffee cup
+  24: Computer keyboard
+  25: Couch
+  26: Cowboy hat
+  27: Dog
+  28: Dress
+  29: Drink
+  30: Facial tissue holder
+  31: Fedora
+  32: Filing cabinet
+  33: Flower
+  34: Flowerpot
+  35: Girl
+  36: Grapefruit
+  37: Guitar
+  38: Hat
+  39: High heels
+  40: Human body
+  41: Human ear
+  42: Human mouth
+  43: Ipod
+  44: Jeans
+  45: Kettle
+  46: Laptop
+  47: Lemon
+  48: Lipstick
+  49: Loveseat
+  50: Luggage and bags
+  51: Man
+  52: Mobile phone
+  53: Mouse
+  54: Muffin
+  55: Mug
+  56: Pastry
+  57: Peach
+  58: Pen
+  59: Pencil case
+  60: Person
+  61: Picture frame
+  62: Pillow
+  63: Pizza
+  64: Plastic bag
+  65: Platter
+  66: Printer
+  67: Rabbit
+  68: Rose
+  69: Scarf
+  70: Scissors
+  71: Sculpture
+  72: Shirt
+  73: Shorts
+  74: Sofa bed
+  75: Sombrero
+  76: Spoon
+  77: Strawberry
+  78: Studio couch
+  79: Suit
+  80: Suitcase
+  81: Sun hat
+  82: Tablet computer
+  83: Tap
+  84: Tart
+  85: Taxi
+  86: Teapot
+  87: Teddy bear
+  88: Tie
+  89: Toilet
+  90: Tomato
+  91: Toy
+  92: Trousers
+  93: Truck
+  94: Van
+  95: Vase
+  96: Washing machine
+  97: Waste container
+  98: Watch
+  99: Wheel
+  100: Wine
+  101: Woman
+path: c:\Users\raian\source\repos\Py\RoboticArmApi\src\cv\yolo_dataset
+train: .\images\train\
+val: .\images\val\

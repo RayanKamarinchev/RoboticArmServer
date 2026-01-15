@@ -2,3 +2,8 @@ src/imgs/
 uploads/
 src/examples/*
 src/calibration/*
+src/cv/yolo_dataset/images/train/*
+src/cv/yolo_dataset/images/val/*
+src/cv/yolo_dataset/labels/train/*
+src/cv/yolo_dataset/labels/val/*
+src/cv/runs/segment/*
