@@ -1,6 +1,12 @@
 import cv2 as cv
 import numpy as np
 from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
+from movement import conv_camera_coords_to_gripper_coords, get_arm_vectors, get_gripper_coords_and_cam_rotation_from_arm, get_initial_angles, get_rotation_matrix, get_translation
+
+c = 0.13
+e = 0.07#68-70
+delta = np.radians(75) 
+camera_offset_len = 0.016
 
 def angle_between(v1, v2):
     #using the cosine theorem
@@ -33,12 +39,32 @@ marker_positions = get_marker_positions(MARKER_SIZE, MARKER_SPACING)
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
-res_img1, camera_position, angle_from_cam = get_camera_position(img, marker_positions, MARKER_SIZE)
-# res_img2, camera_position = get_camera_pos_from_board(img, MARKER_SIZE, MARKER_SPACING)
+
+res_img1, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+print("Camera position:", camera_position)
+initial_gripper_position_in_space = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles(), coordinate_systems_angle)
+
+print("Gripper position in space", initial_gripper_position_in_space)
+initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(get_initial_angles())
+
+coordinate_systems_angle = np.radians(coordinate_systems_angle)
+print("Angle: ", coordinate_systems_angle)
+
+arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
+print("Arm angle", np.degrees(arm_angle))
+
+coordinate_systems_angle -= arm_angle
+
+print("Initial grip position from arm", initial_gripper_position_from_arm)
+print("Initial grip position in space", initial_gripper_position_in_space)
+print("arm vec in space", get_rotation_matrix(coordinate_systems_angle) @ initial_gripper_position_from_arm)
+translation = get_translation(initial_gripper_position_from_arm, initial_gripper_position_in_space, coordinate_systems_angle)
+print("Translation: ", translation)
+
 
 cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
 
-print("Angle", angle_from_cam)
+# print("Angle", angle_from_cam)
 
 # azimuth = np.arctan2(camera_position[0], camera_position[1])
 # azimuth = (azimuth + 2*np.pi) % (2*np.pi)
@@ -64,8 +90,6 @@ print("Angle", angle_from_cam)
 # print(np.degrees(azimuth), "az5")
 # azimuth = np.arctan2(forward[0], forward[1])
 # print(np.degrees(azimuth), "az6")
-
-print("Camera position relative to board:", camera_position)
 
 
 #test marker count

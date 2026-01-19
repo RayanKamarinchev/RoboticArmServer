@@ -35,7 +35,7 @@ def prepare_instructions(img):
     img, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position) 
     
-    target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles())
+    target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles(), coordinate_systems_angle)
     
     angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
     with open(INSTRUCTIONS_DIR, "r") as f:
@@ -155,6 +155,6 @@ def receive_data():
     flag = False
     print("Sending instructions:", instructions)
     return jsonify(instructions), 200
-
+ 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)

@@ -86,7 +86,7 @@ def get_camera_position(img, marker_positions, marker_size):
 
     v_xy /= np.linalg.norm(v_xy)
 
-    cam_angle = np.degrees(np.arctan2(v_xy[1], v_xy[0]))
+    cam_angle = -np.degrees(np.arctan2(v_xy[1], v_xy[0]))
     print(cam_angle)
 
     return img_copy, camera_position, cam_angle
