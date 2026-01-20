@@ -3,7 +3,7 @@ import numpy as np
 import glob
 
 # ---- SETTINGS ----
-images_path = "src/calibration/*.jpg"
+images_path = "src/calibration/cam2/*.jpg"
 pattern_size = (9, 6)       
 square_size = 0.025         # in meters
 

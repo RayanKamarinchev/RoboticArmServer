@@ -1,7 +1,8 @@
 import cv2 as cv
 import numpy as np
 from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
-from movement import conv_camera_coords_to_gripper_coords, get_arm_vectors, get_gripper_coords_and_cam_rotation_from_arm, get_initial_angles, get_rotation_matrix, get_translation
+from movement import conv_camera_coords_to_gripper_coords, get_arm_vectors, get_gripper_coords_and_cam_rotation_from_arm, get_initial_angles, get_rotation_matrix, get_translation, transform_arm_to_space_coords
+from scipy.optimize import minimize
 
 c = 0.13
 e = 0.07#68-70
@@ -31,11 +32,17 @@ with open('./uploads/latest.jpg', 'rb') as f:
 MARKER_SIZE=0.036  # in meters
 MARKER_SPACING=0.005
 
-#print grid
-# for y in range(grid.shape[0]):
-#     for x in range(grid.shape[1]):
-#         print(f"ID: {grid[y][x]} Position: {np.round(marker_grid[y][x], 3)}")
-marker_positions = get_marker_positions(MARKER_SIZE, MARKER_SPACING)
+# coordinate_systems_angle = 0.38041146105718765
+# co, si = np.cos(coordinate_systems_angle), np.sin(coordinate_systems_angle)
+# cam = np.array([0.11160683, 0.05119527, 0.30186553])
+# dis = np.array([-0.05138573,  0.016,      -0.12020399])
+# mat = np.array([
+#         [ -co, si, 0],
+#         [ si,  co, 0],
+#         [0,  0, 1]
+#     ])
+# print(mat @ dis)#[ 0.04730703  0.02566199 -0.12020399]
+
 
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
@@ -47,19 +54,19 @@ initial_gripper_position_in_space = conv_camera_coords_to_gripper_coords(camera_
 print("Gripper position in space", initial_gripper_position_in_space)
 initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(get_initial_angles())
 
-coordinate_systems_angle = np.radians(coordinate_systems_angle)
-print("Angle: ", coordinate_systems_angle)
+# coordinate_systems_angle = np.radians(coordinate_systems_angle)
+# print("Angle: ", coordinate_systems_angle)
 
-arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
-print("Arm angle", np.degrees(arm_angle))
+# arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
+# print("Arm angle", np.degrees(arm_angle))
 
-coordinate_systems_angle -= arm_angle
+# coordinate_systems_angle -= arm_angle
 
 print("Initial grip position from arm", initial_gripper_position_from_arm)
-print("Initial grip position in space", initial_gripper_position_in_space)
-print("arm vec in space", get_rotation_matrix(coordinate_systems_angle) @ initial_gripper_position_from_arm)
-translation = get_translation(initial_gripper_position_from_arm, initial_gripper_position_in_space, coordinate_systems_angle)
-print("Translation: ", translation)
+# print("Initial grip position in space", initial_gripper_position_in_space)
+# print("arm vec in space", get_rotation_matrix(coordinate_systems_angle) @ initial_gripper_position_from_arm)
+# translation = get_translation(initial_gripper_position_from_arm, initial_gripper_position_in_space, coordinate_systems_angle)
+# print("Translation: ", translation)
 
 
 cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
@@ -100,3 +107,37 @@ cv.imwrite('./src/examples/annotated_image.jpg', res_img1)
 #     marker_positions.pop(i)
 #     _, estimated, _ = get_camera_position(img, marker_positions, MARKER_SIZE)
 #     print(f"Removed marker {i}, difference: {np.linalg.norm(np.array(ground_truth)-np.array(estimated))} meters")
+
+
+
+#initial angles finding
+target = np.asarray(initial_gripper_position_in_space)
+
+def objective(angles):
+    pos_arm, _ = get_gripper_coords_and_cam_rotation_from_arm(angles)
+
+    error = pos_arm[2] - target[2]
+    return np.dot(error, error)  # squared error (smooth!)
+
+bounds = [
+    (np.radians(-10),  np.radians(170)),   # alpha
+    (np.radians(34),   np.radians(214)),   # beta
+    (np.radians(73),   np.radians(253)),   # gamma
+    (np.radians(0), np.radians(0)),    # theta
+    (np.radians(0),  np.radians(0)),   # psi
+]
+
+result = minimize(
+    objective,
+    get_initial_angles(),
+    method="L-BFGS-B",
+    bounds=bounds
+)
+
+if not result.success and result.fun > 1e-10:
+    raise RuntimeError(
+        f"Calibration failed: {result.message}, error={result.fun}"
+    )
+    
+print("Initial angles (degrees):", np.degrees(get_initial_angles()))
+print("Calibrated angles (degrees):", np.degrees(result.x))

@@ -15,9 +15,9 @@ delta = np.radians(75) #around 78
 
 
 def get_initial_angles():
-    alpha = np.radians(90)
-    beta = np.radians(109)
-    gamma = np.radians(79)
+    alpha = np.radians(92)#90
+    beta = np.radians(111)#109
+    gamma = np.radians(79)#79
     theta = np.radians(0)
     psi = np.radians(0)
     return [alpha, beta, gamma, theta, psi]
@@ -101,7 +101,6 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
     x, y, z = desired_coords
     initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
-    coordinate_systems_angle = np.radians(coordinate_systems_angle)
     print("Angle: ", coordinate_systems_angle)
     
     arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
@@ -117,7 +116,6 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
         #convert from arm coordinate system to from board(in space) coordinate system
         position_in_space = transform_arm_to_space_coords(position_from_arm, coordinate_systems_angle, translation)
-        print("Pos in space:", position_in_space)
         
         position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
         # position_diff = np.linalg.norm(position_in_space-np.array([x,-y,z]))
@@ -142,7 +140,7 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         bounds=bounds,
     )
 
-    if result.success:
+    if result.success or result.fun < 1e-6:
         print("angles:")
         print(np.round(np.degrees(result.x),  decimals=1))
         alpha, beta, gamma, theta, psi  = np.round(np.degrees(result.x))
@@ -172,7 +170,6 @@ def get_move_angles(camera_coords, target_coords, current_angles, coordinate_sys
 
 def conv_camera_coords_to_gripper_coords(camera_coords, angles, coordinate_systems_angle):
     gripper_angle = angles[0] + angles[1] + angles[2]
-    camera_angle = gripper_angle + delta
     
     _, arm_head = get_arm_vectors(angles[0], angles[1], angles[2], angles[4])
     _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4])
@@ -185,13 +182,15 @@ def conv_camera_coords_to_gripper_coords(camera_coords, angles, coordinate_syste
     # translation_vec = rotate_vec(-caemra_offset_normalized-camera_vector_normalized+arm_head, -coordinate_systems_angle)
     disposition_vec_in_arm_system = -caemra_offset_normalized-camera_vector_normalized+arm_head
     
+    print("Angle is this" , coordinate_systems_angle)
     co, si = np.cos(coordinate_systems_angle), np.sin(coordinate_systems_angle)
     mat = np.array([
-        [ co, -si, 0],
-        [ si,  co, 0],
+        [-co, si, 0],
+        [si,  co, 0],
         [0,  0, 1]
     ])
-    
+    print("Disposition vec in arm system", disposition_vec_in_arm_system)
     disposition_vec = mat @ disposition_vec_in_arm_system
+    print("Disposition vec ", disposition_vec)
     gripper_position = camera_coords + disposition_vec
     return gripper_position
