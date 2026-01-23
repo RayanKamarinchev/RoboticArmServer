@@ -130,7 +130,8 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
         (np.radians(34), np.radians(34+180)),       # beta
         (np.radians(73), np.radians(73+180)),       # gamma
         (np.radians(-150), np.radians(-150+180)),   # theta
-        (np.radians(-30), np.radians(-30+180))      # psi
+        # (np.radians(-30), np.radians(-30+180))      # psi
+        (np.radians(0), np.radians(0))      # psi
     ]
 
     # Solve

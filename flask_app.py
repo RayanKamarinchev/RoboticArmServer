@@ -32,7 +32,7 @@ def prepare_instructions(img):
     global flag
     global instructions
     
-    img, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, coordinate_systems_angle, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position) 
     
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles(), coordinate_systems_angle)
@@ -87,7 +87,7 @@ def debug():
 
     img = decode_image(file_bytes)
     
-    img, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, coordinate_systems_angle, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position.tolist()) 
     img_name = f"{counter}_image_{angles_str}.jpg"
     counter+=1
@@ -113,7 +113,7 @@ def get_depth():
 
     img = decode_image(file_bytes)
     cv2.imwrite(IMAGE_PATHS[image_num-1], img)
-    img, camera_position = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    img, camera_position, coordinate_systems_angle, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position)
     
     if (image_num == 2):
