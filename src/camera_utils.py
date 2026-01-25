@@ -1,6 +1,5 @@
 import cv2
 import cv2.aruco as aruco
-from matplotlib.pyplot import grid
 import numpy as np
 import io
 import os
@@ -37,14 +36,13 @@ def undistort_image(image):
 
 def get_camera_position(img, marker_positions, marker_size):
     img_copy = img.copy()
-    camera_matrix = np.load(CAMERA_MATRIX_DIR)
-    dist_coeffs = np.load(DIST_COEFFS_DIR)
+    camera_matrix, dist_coeffs = get_camera_matrix_and_dist_coeffs()
 
     marker_corners, img_points = get_all_markers(img, marker_positions, marker_size)
     
     if marker_corners is None or img_points is None:
         print("No markers detected or matched.")
-        return img_copy, None, None
+        return img_copy, None, None, None, None, None
 
     for i, point in enumerate(img_points):
         if i%2==0:
@@ -89,7 +87,7 @@ def get_camera_position(img, marker_positions, marker_size):
     cam_angle = -np.arctan2(v_xy[1], v_xy[0])
     print(np.degrees(cam_angle))
 
-    return img_copy, camera_position, cam_angle, R
+    return img_copy, camera_position, cam_angle, R, rvec, tvec
 
 def get_all_markers(img, marker_positions, marker_size=0.036):
     dictionary = aruco.getPredefinedDictionary(aruco.DICT_5X5_100)
@@ -176,6 +174,9 @@ def get_depth_map(img_left, img_right):
     cv2.imwrite("rectified_img.jpg", rectL)
     print("RMS:", rms)
     print("T:", T.ravel())
-    
-    
-    
+
+
+def get_camera_matrix_and_dist_coeffs():
+    camera_matrix = np.load(CAMERA_MATRIX_DIR)
+    dist_coeffs = np.load(DIST_COEFFS_DIR)
+    return camera_matrix, dist_coeffs

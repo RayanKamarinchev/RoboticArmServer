@@ -6,8 +6,10 @@ import io
 import numpy as np
 import json
 
-from src.camera_utils import decode_image, get_camera_position, get_marker_positions
+from src.box_detection import get_box_coordinates
+from src.camera_utils import decode_image, get_camera_position, get_marker_positions, get_camera_matrix_and_dist_coeffs
 from src.movement import get_move_angles, get_initial_angles, conv_camera_coords_to_gripper_coords
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE" #TODO
 
 app = Flask(__name__)
 
@@ -32,12 +34,15 @@ def prepare_instructions(img):
     global flag
     global instructions
     
-    img, camera_position, coordinate_systems_angle, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    copy_img, camera_position, coordinate_systems_angle, R, rvec, tvec = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
     print("Camera position:", camera_position) 
     
     target_position = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles(), coordinate_systems_angle)
     
     angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
+    first_angles = angles.copy()
+    camera_matrix, dist_coeffs = get_camera_matrix_and_dist_coeffs()
+    
     with open(INSTRUCTIONS_DIR, "r") as f:
         instructions_data = json.load(f)
     
@@ -45,13 +50,22 @@ def prepare_instructions(img):
     
     instructions.append(["move", *angles])
     instructions.append(["wait", 1])
+
+    target_position = get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rvec, tvec)[0]
+    angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
     
-    for line in instructions_data:
-        if line[0] == "move":
-            angles = get_move_angles(camera_position, line[1], get_initial_angles(), coordinate_systems_angle)
-            instructions.append(["move", *angles])
-        else:
-            instructions.append(line)
+    instructions.append(["move", *angles])
+    instructions.append(["wait", 1])
+    instructions.append(["grip", 1])
+    instructions.append(["wait", 1])
+    instructions.append(["move", *first_angles])
+    
+    # for line in instructions_data:
+    #     if line[0] == "move":
+    #         angles = get_move_angles(camera_position, line[1], get_initial_angles(), coordinate_systems_angle)
+    #         instructions.append(["move", *angles])
+    #     else:
+    #         instructions.append(line)
     
     flag = True 
     
