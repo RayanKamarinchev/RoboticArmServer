@@ -6,7 +6,7 @@ import os
 
 QR_CODE_SIZE = 0.023
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train7/weights/best.pt')
+MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train11/weights/best.pt')
 
 def rescale_masks(masks, img_shape):
     scale = img_shape[0] / masks.shape[1]
@@ -138,7 +138,7 @@ def get_cuboid_info(top_side_world_points):
     
     print("Cuboid width:", width)
     print("Cuboid length:", length)
-    grab_point = top_side_world_points[1] + 0.5 * width_vec + 0.5 * length_vec - [0,0,top_side_world_points[1][2] * 0.5]
+    grab_point = top_side_world_points[1] + 0.5 * width_vec + 0.5 * length_vec - [0,0,top_side_world_points[1][2] * 0.7]
     print("Cuboid grab point:", grab_point)
     
     return grab_point

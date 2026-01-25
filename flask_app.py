@@ -59,6 +59,8 @@ def prepare_instructions(img):
     instructions.append(["grip", 1])
     instructions.append(["wait", 1])
     instructions.append(["move", *first_angles])
+    instructions.append(["wait", 30])
+    instructions.append(["grip", 0])
     
     # for line in instructions_data:
     #     if line[0] == "move":
