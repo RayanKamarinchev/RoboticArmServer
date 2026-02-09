@@ -4,10 +4,33 @@ import numpy as np
 from scipy.optimize import minimize
 
 from camera_utils import get_camera_position, get_marker_positions
-from movement import conv_camera_coords_to_gripper_coords
 MARKER_SIZE = 0.036
 MARKER_SPACING = 0.005
 baseElevation = 0.132
+e = 0.07#68-70
+camera_offset_len = 0.016
+delta = np.radians(75)
+
+def conv_camera_coords_to_gripper_coords(camera_coords, angles, coordinate_systems_angle, a, b, c):
+    gripper_angle = angles[0] + angles[1] + angles[2]
+    
+    _, arm_head = get_arm_vectors(angles[0], angles[1], angles[2], angles[4], a, b, c)
+    _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4], a, b, c)
+    camera_vector_normalized = camera_vector_direction * e / c
+    camera_offset = np.cross(arm_head, camera_vector_normalized)
+    caemra_offset_normalized = camera_offset / np.linalg.norm(camera_offset) * camera_offset_len
+    disposition_vec_in_arm_system = -caemra_offset_normalized-camera_vector_normalized+arm_head
+    
+    co, si = np.cos(coordinate_systems_angle), np.sin(coordinate_systems_angle)
+    mat = np.array([
+        [-co, si, 0],
+        [si,  co, 0],
+        [0,  0, 1]
+    ])
+    disposition_vec = mat @ disposition_vec_in_arm_system
+    gripper_position = camera_coords + disposition_vec
+    return gripper_position
+
 
 
 def rotate_vec(vec, theta):
@@ -59,11 +82,11 @@ def get_arm_vectors(alpha, beta, gamma, psi, a, b, c):
     
     return lb, lh
 
-def get_gripper_coords_and_cam_rotation_from_arm(angles):
+def get_gripper_coords_and_cam_rotation_from_arm(angles, a, b, c):
     alpha, beta, gamma, theta, psi = angles
     psi=0
     
-    lb, lh = get_arm_vectors(alpha, beta, gamma, psi)
+    lb, lh = get_arm_vectors(alpha, beta, gamma, psi, a, b, c)
     
     arm_vector = lb + lh
     #calculating the rotation angle around the z axis
@@ -79,96 +102,88 @@ def get_gripper_coords_and_cam_rotation_from_arm(angles):
     position[2] += baseElevation
     return (position, [azimuth, elevation, rotation])
 
-
-def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords, coordinate_systems_angle):
-    x, y, z = desired_coords
-    initial_gripper_position_from_arm, _ = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
-    print(f"Moving to position x:{x} y:{y} z:{z}")
-    print("Angle: ", coordinate_systems_angle)
-    
-    arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
-    print("Arm angle", np.degrees(arm_angle))
-    
-    coordinate_systems_angle -= arm_angle
-    print("Initial grip position from arm", initial_gripper_position_from_arm)
-    print("Initial grip position in space", initial_gripper_position_in_space)
-    print("arm vec in space", get_rotation_matrix(coordinate_systems_angle) @ initial_gripper_position_from_arm)
-    translation = get_translation(initial_gripper_position_from_arm, initial_gripper_position_in_space, coordinate_systems_angle)
-    print("Translation: ", translation)
-    def objective(vars):
-        position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(vars)
-        #convert from arm coordinate system to from board(in space) coordinate system
-        position_in_space = transform_arm_to_space_coords(position_from_arm, coordinate_systems_angle, translation)
-        
-        position_diff = np.linalg.norm(position_in_space-np.array([x,y,z]))
-        # position_diff = np.linalg.norm(position_in_space-np.array([x,-y,z]))
-        #TODO camera difference
-        # penalty = np.linalg.norm(vars - initial_angles)
-        penalty = np.abs(vars[3]) + np.abs(vars[4])*3
-        # penalty = 5*vars[0]-np.round(vars[0])
-        return position_diff + 1e-4 * penalty
-
-    bounds = [
-        (np.radians(-10), np.radians(-10+180)),       # alpha
-        (np.radians(34), np.radians(34+180)),       # beta
-        (np.radians(73), np.radians(73+180)),       # gamma
-        (np.radians(-150), np.radians(-150+180)),   # theta
-        # (np.radians(-30), np.radians(-30+180))      # psi
-        (np.radians(0), np.radians(0))      # psi
-    ]
-
-    result = minimize(
-        objective,
-        initial_angles,
-        bounds=bounds,
-    )
-
-    if result.success or result.fun < 1e-6:
-        print("angles:")
-        print(np.round(np.degrees(result.x),  decimals=1))
-        alpha, beta, gamma, theta, psi  = np.round(np.degrees(result.x))
-        
-        position_from_arm, camera_angles = get_gripper_coords_and_cam_rotation_from_arm(result.x)
-        print("x grip in space", np.sin(coordinate_systems_angle)*initial_gripper_position_in_space[0])
-        print("y grip in space", -np.cos(coordinate_systems_angle)*initial_gripper_position_in_space[1])
-        print("y grip in arm", - initial_gripper_position_from_arm[1])
-        print("pos", - position_from_arm[1])
-        
-        pos, cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(result.x)
-        print(f"Initial gripper position from arm", initial_gripper_position_from_arm)
-        print(f"Initial gripper position in space", initial_gripper_position_in_space)
-        pos[0] = initial_gripper_position_from_arm[0] + initial_gripper_position_in_space[0] - pos[0]
-        pos[1] = initial_gripper_position_in_space[1] + pos[1]
-    else:
-        print("Optimization failed:", result.message)
-
-    return [theta, alpha, beta, psi, gamma]
-
-def get_move_angles(initial_camera_coords, target_coords, initial_angles, coordinate_systems_angle):
-    gripper_coords_in_space = conv_camera_coords_to_gripper_coords(initial_camera_coords, initial_angles, coordinate_systems_angle)
-    print("Gripper coords in space", gripper_coords_in_space)
-    angles = move_to_position(gripper_coords_in_space, initial_angles, target_coords, coordinate_systems_angle)
-    return angles
-
+def get_angles(vars, servo_angles):
+    return [np.radians(servo_angles[0]+vars[0]),np.radians( vars[1]-servo_angles[1]), np.radians(servo_angles[2]+vars[2]), np.radians(servo_angles[3]-30), 0]
 
 cam_positions = []
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 folder =  os.path.join(BASE_DIR, "views_from_servo_angles")
 
 images = [os.path.join(folder, f) for f in os.listdir(folder)]
+initial_img_path = next((x for x in images if '30_100_100_6' in x))
 
-initial_img = cv2.imread("30_100_100_6.jpg")
-_, initial_camera_position, cam_angle, _, _, _ = get_camera_position(initial_img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+initial_img = cv2.imread(initial_img_path)
+_, initial_camera_position, initial_coordinate_systems_angle, _, _, _ = get_camera_position(initial_img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+print("Angle: ", initial_coordinate_systems_angle)
+print("Init camera position: ", initial_camera_position)
 
 #alpha offset, beta offset, gamma offset, a, b, c
-vars = [-8, 211, 73, 0.119, 0.122, 0.13]
+init_vars = [-8, 211, 73, 0.119, 0.122, 0.13]
 
-def get_angles(vars, servo_angles):
-    return [servo_angles[0]+vars[0], vars[1]-servo_angles[1], servo_angles[2]+vars[2], servo_angles[3]-30, 0]
-
-initial_gripper_position = conv_camera_coords_to_gripper_coords(initial_camera_position, get_angles(vars, [100, 100, 6, 30]), cam_angle)
+imgs_info = []
 
 for img_path in images:
     img = cv2.imread(img_path)
-    _, cam_position, _, _, _, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
-    print(f"Image: {img_path}   Cam position: {cam_position}")
+    file_name = os.path.splitext(os.path.basename(img_path))[0]
+    angles_unordered = [int(x) for x in file_name.split('_')]
+    servo_angles = angles_unordered[1:] + angles_unordered[:1]
+    
+    _, cam_position, coordinate_systems_angle, _, _, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    imgs_info.append([servo_angles, cam_position, coordinate_systems_angle])
+
+def objective(vars, initial_camera_position, initial_coordinate_systems_angle, imgs_info):
+    
+    initial_angles = get_angles(vars, [100, 100, 6, 30])
+    initial_gripper_position_in_space = conv_camera_coords_to_gripper_coords(initial_camera_position, initial_angles, initial_coordinate_systems_angle, vars[3], vars[4], vars[5])
+    # print("Initial grip position in space", initial_gripper_position_in_space)
+
+    initial_gripper_position_from_arm, _ = get_gripper_coords_and_cam_rotation_from_arm(initial_angles, vars[3], vars[4], vars[5])
+    # print("Initial angles: ", initial_angles)
+    # print("Initial grip position from arm", initial_gripper_position_from_arm)
+
+    arm_angle = np.arctan2(initial_gripper_position_from_arm[1], initial_gripper_position_from_arm[0])
+    # print("Arm angle", np.degrees(arm_angle))
+
+    # print("arm vec in space", get_rotation_matrix(initial_coordinate_systems_angle) @ initial_gripper_position_from_arm)
+    translation = get_translation(initial_gripper_position_from_arm, initial_gripper_position_in_space, initial_coordinate_systems_angle - arm_angle)
+    # print("Translation: ", translation)
+    cumulative_error = 0
+
+    for info in imgs_info:
+        
+        servo_angles, cam_position, coordinate_systems_angle = info
+        
+        angles = get_angles(vars, servo_angles)
+        real_gripper_position_in_space = conv_camera_coords_to_gripper_coords(cam_position, angles, coordinate_systems_angle, vars[3], vars[4], vars[5])
+        
+        position_from_arm, _ = get_gripper_coords_and_cam_rotation_from_arm(angles, vars[3], vars[4], vars[5])
+        #convert from arm coordinate system to from board(in space) coordinate system
+        position_in_space = transform_arm_to_space_coords(position_from_arm, coordinate_systems_angle, translation)
+        
+        position_diff = np.linalg.norm(position_in_space-real_gripper_position_in_space)
+        # print("Camera position: ", cam_position)
+        # print("Real gripper position: ", real_gripper_position_in_space)
+        # print("Calculated gripper position: ", position_in_space)
+        # print("Error: ", position_diff)
+        # position_diff*=10e4
+        cumulative_error+=position_diff
+        
+    cumulative_error/=len(images)
+    # print(cumulative_error)
+    return cumulative_error
+        
+        
+print("----------------------------------------------------------")
+result = minimize(
+        objective,
+        init_vars,
+        args=(initial_camera_position, initial_coordinate_systems_angle, imgs_info)
+    )
+
+print(result)
+
+
+err = objective(result.x, initial_camera_position, initial_coordinate_systems_angle, imgs_info)
+print("err: ", err)
+err2 = objective(init_vars, initial_camera_position, initial_coordinate_systems_angle, imgs_info)
+print("err2: ", err2)
