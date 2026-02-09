@@ -19,7 +19,8 @@ def angle_between(v1, v2):
 # with open('./src/examples/empty.jpg', 'rb') as f:
 # with open('./src/examples/latest (3).jpg', 'rb') as f:
 # with open('./uploads/15_image_30.00_100.00_100.00_155.00_6.00_160.00.jpg', 'rb') as f:
-with open('./uploads/latest.jpg', 'rb') as f:
+# with open('./uploads/latest.jpg', 'rb') as f:
+with open('./uploads/try.jpg', 'rb') as f:
     image_bytes = f.read()
 
 # undistorted = undistort_image(image_bytes)
@@ -47,8 +48,9 @@ MARKER_SPACING=0.005
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
 
-res_img1, camera_position, coordinate_systems_angle = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+res_img1, camera_position, coordinate_systems_angle, _, _, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
 print("Camera position:", camera_position)
+cv.imwrite("try.png", res_img1)
 initial_gripper_position_in_space = conv_camera_coords_to_gripper_coords(camera_position, get_initial_angles(), coordinate_systems_angle)
 
 print("Gripper position in space", initial_gripper_position_in_space)

@@ -1,28 +1,44 @@
-import math
 import os
+import cv2
 import numpy as np
 from scipy.optimize import minimize
 
-# Robot arm segment lengths in cm
-a = 0.119
-b = 0.122
-c = 0.13
-e = 0.07#68-70
-camera_offset_len = 0.016
-baseElevation = 0.132 # 30-32
-# Initial joint angles in degrees
-delta = np.radians(75) #around 78
+from camera_utils import get_camera_position, get_marker_positions
+from movement import conv_camera_coords_to_gripper_coords
+MARKER_SIZE = 0.036
+MARKER_SPACING = 0.005
+baseElevation = 0.132
 
 
-def get_initial_angles():
-    alpha = np.radians(92)#90
-    beta = np.radians(111)#109
-    gamma = np.radians(79)#79
-    theta = np.radians(0)
-    psi = np.radians(0)
-    return [alpha, beta, gamma, theta, psi]
+def rotate_vec(vec, theta):
+    R = np.array([
+        [np.cos(theta), -np.sin(theta), 0],
+        [np.sin(theta),  np.cos(theta), 0],
+        [0,              0,             1]
+    ])
+    return R @ vec
 
-def get_arm_vectors(alpha, beta, gamma, psi): 
+def get_rotation_matrix(alpha):
+    c, s = np.cos(alpha), np.sin(alpha)
+    return np.array([
+        [-c, s, 0],
+        [ s, c, 0],
+        [0, 0, 1]
+    ])
+    
+def get_translation(p1, p2, alpha):
+    R = get_rotation_matrix(alpha)
+    return p2 - R @ p1
+
+def transform_arm_to_space_coords(p1, alpha, t):
+    R = get_rotation_matrix(alpha)
+    return R @ p1 + t
+
+def transform_space_to_arm_coords(p2, alpha, t):
+    R = get_rotation_matrix(alpha)
+    return R.T @ (p2 - t)
+
+def get_arm_vectors(alpha, beta, gamma, psi, a, b, c): 
     l2_angle = alpha + beta - np.pi
     #arm1
     l1 = a * np.array([np.cos(alpha), 0, np.sin(alpha)])
@@ -63,43 +79,10 @@ def get_gripper_coords_and_cam_rotation_from_arm(angles):
     position[2] += baseElevation
     return (position, [azimuth, elevation, rotation])
 
-# def rotate_vec(vec, theta):
-#     vec_already_rotated = np.arctan2(vec[1], vec[0])
-#     full_rotation_angle = vec_already_rotated + theta
-#     radius = vec[0]/np.cos(vec_already_rotated)
-#     return np.array([radius*np.cos(full_rotation_angle), radius*np.sin(full_rotation_angle), vec[2]])
-def rotate_vec(vec, theta):
-    R = np.array([
-        [np.cos(theta), -np.sin(theta), 0],
-        [np.sin(theta),  np.cos(theta), 0],
-        [0,              0,             1]
-    ])
-    return R @ vec
-
-
-def get_rotation_matrix(alpha):
-    c, s = np.cos(alpha), np.sin(alpha)
-    return np.array([
-        [-c, s, 0],
-        [ s, c, 0],
-        [0, 0, 1]
-    ])
-    
-def get_translation(p1, p2, alpha):
-    R = get_rotation_matrix(alpha)
-    return p2 - R @ p1
-
-def transform_arm_to_space_coords(p1, alpha, t):
-    R = get_rotation_matrix(alpha)
-    return R @ p1 + t
-
-def transform_space_to_arm_coords(p2, alpha, t):
-    R = get_rotation_matrix(alpha)
-    return R.T @ (p2 - t)
 
 def move_to_position(initial_gripper_position_in_space, initial_angles, desired_coords, coordinate_systems_angle):
     x, y, z = desired_coords
-    initial_gripper_position_from_arm, initial_cam_rotation = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
+    initial_gripper_position_from_arm, _ = get_gripper_coords_and_cam_rotation_from_arm(initial_angles)
     print(f"Moving to position x:{x} y:{y} z:{z}")
     print("Angle: ", coordinate_systems_angle)
     
@@ -161,36 +144,31 @@ def move_to_position(initial_gripper_position_in_space, initial_angles, desired_
 
     return [theta, alpha, beta, psi, gamma]
 
-def get_move_angles(camera_coords, target_coords, current_angles, coordinate_systems_angle):
-    #TODO coordinate_systems_angle + arm_angle
-    gripper_coords_in_space = conv_camera_coords_to_gripper_coords(camera_coords, current_angles, coordinate_systems_angle)
+def get_move_angles(initial_camera_coords, target_coords, initial_angles, coordinate_systems_angle):
+    gripper_coords_in_space = conv_camera_coords_to_gripper_coords(initial_camera_coords, initial_angles, coordinate_systems_angle)
     print("Gripper coords in space", gripper_coords_in_space)
-    angles = move_to_position(gripper_coords_in_space, current_angles, target_coords, coordinate_systems_angle)
+    angles = move_to_position(gripper_coords_in_space, initial_angles, target_coords, coordinate_systems_angle)
     return angles
 
-def conv_camera_coords_to_gripper_coords(camera_coords, angles, coordinate_systems_angle):
-    gripper_angle = angles[0] + angles[1] + angles[2]
-    
-    _, arm_head = get_arm_vectors(angles[0], angles[1], angles[2], angles[4])
-    _, camera_vector_direction = get_arm_vectors(angles[0], angles[1], angles[2] + delta, angles[4])
-    camera_vector_normalized = camera_vector_direction * e / c
-    camera_offset = np.cross(arm_head, camera_vector_normalized)
-    # print(camera_vector_normalized, "cam vec")
-    # print(arm_head, "arm")
-    caemra_offset_normalized = camera_offset / np.linalg.norm(camera_offset) * camera_offset_len
-    # print(caemra_offset_normalized, "Camera offset")
-    # translation_vec = rotate_vec(-caemra_offset_normalized-camera_vector_normalized+arm_head, -coordinate_systems_angle)
-    disposition_vec_in_arm_system = -caemra_offset_normalized-camera_vector_normalized+arm_head
-    
-    print("Angle is this" , coordinate_systems_angle)
-    co, si = np.cos(coordinate_systems_angle), np.sin(coordinate_systems_angle)
-    mat = np.array([
-        [-co, si, 0],
-        [si,  co, 0],
-        [0,  0, 1]
-    ])
-    print("Disposition vec in arm system", disposition_vec_in_arm_system)
-    disposition_vec = mat @ disposition_vec_in_arm_system
-    print("Disposition vec ", disposition_vec)
-    gripper_position = camera_coords + disposition_vec
-    return gripper_position
+
+cam_positions = []
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+folder =  os.path.join(BASE_DIR, "views_from_servo_angles")
+
+images = [os.path.join(folder, f) for f in os.listdir(folder)]
+
+initial_img = cv2.imread("30_100_100_6.jpg")
+_, initial_camera_position, cam_angle, _, _, _ = get_camera_position(initial_img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+
+#alpha offset, beta offset, gamma offset, a, b, c
+vars = [-8, 211, 73, 0.119, 0.122, 0.13]
+
+def get_angles(vars, servo_angles):
+    return [servo_angles[0]+vars[0], vars[1]-servo_angles[1], servo_angles[2]+vars[2], servo_angles[3]-30, 0]
+
+initial_gripper_position = conv_camera_coords_to_gripper_coords(initial_camera_position, get_angles(vars, [100, 100, 6, 30]), cam_angle)
+
+for img_path in images:
+    img = cv2.imread(img_path)
+    _, cam_position, _, _, _, _ = get_camera_position(img, get_marker_positions(MARKER_SIZE, MARKER_SPACING), MARKER_SIZE)
+    print(f"Image: {img_path}   Cam position: {cam_position}")
