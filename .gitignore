@@ -12,3 +12,4 @@ src/cv/test_data/*
 src/cv/additional_data/*
 src/cv/top_faces_data/*
 src/views_from_servo_angles/*
+src/unused_data/*
