@@ -3,8 +3,9 @@ import numpy as np
 from pyzbar.pyzbar import decode
 from ultralytics import YOLO
 import os
+import cv2.aruco as aruco
 
-QR_CODE_SIZE = 0.023
+BOX_CODE_SIZE = 0.03
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train11/weights/best.pt')
 
@@ -57,24 +58,33 @@ def draw_masks_and_polygons(img, masks, polygons):
     cv2.imwrite("result.png", overlay)
     return overlay
 
-def detect_qr_codes(img, boxes):
-    qr_codes = []
+def detect_box_codes(img, boxes):
+    dictionary = aruco.getPredefinedDictionary(aruco.DICT_6X6_1000)
+    detector = aruco.ArucoDetector(dictionary, aruco.DetectorParameters())
+    
+    box_data = []
+
     for box in boxes:
         x1, y1, x2, y2 = map(int, box[:4])
-        gray = cv2.cvtColor(img[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY)
-        cv2.imwrite("qr.jpg", gray)
-        qr_code = decode(gray)[0]
-        points = [(point.x + x1, point.y + y1) for point in qr_code.polygon]
-        qr_codes.append({"points": points, "data": qr_code.data})
+        cv2.imwrite("qr.jpg", img[y1:y2, x1:x2])
         
-    return qr_codes
+        corners, ids, _ = detector.detectMarkers(img[y1:y2, x1:x2])
+        if ids is None or len(ids) == 0:
+            box_data.append(None)
+            continue
+        
+        print("croenrs[0]: ", corners[0])
+        corners_in_image = [[x + x1, y + y1] for (x,y) in corners[0]]
+        box_data.append({"corners": corners_in_image, "id": ids[0]})
+    
+    return box_data
 
 def get_polygon_centroid(polygon):
     return np.mean(polygon, axis=0)
 
-def get_height_from_qr_code(qr, camera_matrix, dist_coeffs, camera_position, R):
-    qr_code_2d = undistort_points(qr["points"], camera_matrix, dist_coeffs)
-    rays = get_world_rays_from_img_points(qr_code_2d, camera_matrix, R)
+def get_height_from_box_code(box_corners, camera_matrix, dist_coeffs, camera_position, R):
+    box_code_2d = undistort_points(box_corners, camera_matrix, dist_coeffs)
+    rays = get_world_rays_from_img_points(box_code_2d, camera_matrix, R)
 
     d0 = rays[0]
     d1 = rays[1]
@@ -83,7 +93,7 @@ def get_height_from_qr_code(qr, camera_matrix, dist_coeffs, camera_position, R):
         d1 / d1[2] - d0 / d0[2]
     )
 
-    h = camera_position[2] - QR_CODE_SIZE / K_factor
+    h = camera_position[2] - BOX_CODE_SIZE / K_factor
     return h
     
     
@@ -195,8 +205,8 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
     overlay = draw_masks_and_polygons(img, new_masks, polygons)
     
     boxes = result.boxes.data.cpu().numpy()
-    qr_codes = detect_qr_codes(img, boxes)
-    print(len(qr_codes), "QR codes detected")
+    box_codes = detect_box_codes(img, boxes)
+    print(len(box_codes), "Box codes detected")
 
     h, w = img.shape[:2]
     camera_center = np.array([w/2, h/2]) #TODO cam angle not 90
@@ -209,12 +219,13 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
         for (x, y) in top_side_points:
             cv2.circle(overlay, (int(x), int(y)), 5, (0, 255, 0), -1)
         cv2.imwrite("result.png", overlay)
-        qr_code = qr_codes[i]
-        if qr_code == 0:
+        box_info = boxes_info[i]
+        if box_info is None:
             continue
         
-        cuboid_height = get_height_from_qr_code(qr_code, camera_matrix, dist_coeffs, camera_position, R)
+        cuboid_height = get_height_from_qr_code(box_info.corners, camera_matrix, dist_coeffs, camera_position, R)
         print("Cuboid height:", cuboid_height)
+        print("Box id:", box_info.id)
 
         top_side_world_points = [image_to_world_undistorted1(p[0], p[1], -cuboid_height, new_camera_matrix, rvec, tvec) for p in top_side_points]
             
