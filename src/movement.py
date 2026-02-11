@@ -4,20 +4,21 @@ import numpy as np
 from scipy.optimize import minimize
 
 # Robot arm segment lengths in cm
-a = 0.119
-b = 0.122
+a = 0.12
+b = 0.127
 c = 0.13
 e = 0.07#68-70
 camera_offset_len = 0.016
 baseElevation = 0.132 # 30-32
 # Initial joint angles in degrees
 delta = np.radians(75) #around 78
+offsets = [-3, 205, 69]
 
 
 def get_initial_angles():
-    alpha = np.radians(92)#90
-    beta = np.radians(111)#109
-    gamma = np.radians(79)#79
+    alpha = np.radians(100+offsets[0])
+    beta = np.radians(offsets[1]-100)
+    gamma = np.radians(6+offsets[2])
     theta = np.radians(0)
     psi = np.radians(0)
     return [alpha, beta, gamma, theta, psi]

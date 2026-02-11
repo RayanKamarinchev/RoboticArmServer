@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from camera_utils import get_camera_position, get_marker_positions
+import matplotlib.pyplot as plt
 
 MARKER_SIZE = 0.036
 MARKER_SPACING = 0.005
@@ -117,6 +118,15 @@ def unpack_vars(z):
         z[2] * ANGLE_SCALE,
         z[3] * LENGTH_SCALE,
         z[4] * LENGTH_SCALE,
+    ])
+    
+def pack_z(vars):
+    return np.array([
+        vars[0] / ANGLE_SCALE,
+        vars[1] / ANGLE_SCALE,
+        vars[2] / ANGLE_SCALE,
+        vars[3] / LENGTH_SCALE,
+        vars[4] / LENGTH_SCALE,
     ])
 
 
@@ -313,14 +323,18 @@ def collect_points(vars, imgs_info, init_cam_pos, init_coord_angle, prev_errors 
         #     print("Img servos: ", servo_angles)
         #     print("err: ", err)
         #     erros.append(err)
-        if(prev_errors is None):
-            real_pts.append(real_space)
-            pred_pts.append(pred_space)
-        else:
-            if (prev_errors[i] > err):
-                real_pts.append(real_space)
-                pred_pts.append(pred_space)
+        
+        
+        # if(prev_errors is None):
+        #     real_pts.append(real_space)
+        #     pred_pts.append(pred_space)
+        # else:
+        #     if (prev_errors[i] > err):
+        #         real_pts.append(real_space)
+        #         pred_pts.append(pred_space)
                 
+        real_pts.append(real_space)
+        pred_pts.append(pred_space)
         i+=1
     
 
@@ -338,8 +352,6 @@ real_pts, pred_final, errors_final = collect_points(
 print([float(round(x, 7)) for x in errors_init])
 print([float(round(x, 7)) for x in errors_final])
 
-import matplotlib.pyplot as plt
-
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
 
@@ -352,10 +364,10 @@ ax.scatter(
     label="Real", marker="o"
 )
 
-ax.scatter(
-    pred_init[:, 0], pred_init[:, 1], pred_init[:, 2],
-    label="Initial prediction", marker="^"
-)
+# ax.scatter(
+#     pred_init[:, 0], pred_init[:, 1], pred_init[:, 2],
+#     label="Initial prediction", marker="^"
+# )
 
 ax.scatter(
     pred_final[:, 0], pred_final[:, 1], pred_final[:, 2],
@@ -369,3 +381,42 @@ ax.legend()
 plt.tight_layout()
 plt.show()
 
+
+
+
+
+
+
+#New method
+initial_pred = np.array([-8, 211, 73, 0.119, 0.122])
+prev_pred = [-3.20496343,  205.360898,  68.3649316,  0.120533090, 0.127455405]
+# alpha_range = np.arange(-15, 1)
+alpha_range = np.arange(-10, 1)
+beta_range = np.arange(200, 221)
+gamma_range = np.arange(60, 81)
+a_range = np.arange(0.114, 0.125, 0.002)
+b_range = np.arange(0.115, 0.13, 0.002)
+print(alpha_range)
+print(beta_range)
+print(gamma_range)
+print(a_range)
+print(b_range)
+min_loss = np.inf
+best_vars = [-3, 205, 69, 0.12, 0.127]
+
+# for i, alpha in enumerate(alpha_range):
+#     for j, beta in enumerate(beta_range):
+#         for gamma in gamma_range:
+#             for a in a_range:
+#                 for b in b_range:
+#                     loss = objective_scaled(pack_z([alpha, beta, gamma, a, b]), init_cam_pos, init_coord_angle, imgs_info)
+#                     if loss < min_loss:
+#                         min_loss = loss
+#                         best_vars = [alpha, beta, gamma, a, b]   
+#         print(((j/len(beta_range) + i)/len(alpha_range))*100) 
+#     print("alpha")          
+    
+print("Initial error:", initial_error)
+print("Optimized error:", optim_err)
+print("New method error:", min_loss)
+print("best vars: ", best_vars)
