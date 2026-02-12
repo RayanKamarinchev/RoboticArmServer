@@ -1,5 +1,0 @@
-names:
-  0: Box
-path: c:\Users\raian\source\repos\Py\RoboticArmApi\src\cv\yolo_dataset
-train: .\images\train\
-val: .\images\val\

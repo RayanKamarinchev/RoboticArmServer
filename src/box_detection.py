@@ -7,7 +7,7 @@ import cv2.aruco as aruco
 
 BOX_CODE_SIZE = 0.03
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train11/weights/best.pt')
+MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train14/weights/best.pt')
 
 def rescale_masks(masks, img_shape):
     scale = img_shape[0] / masks.shape[1]
@@ -73,9 +73,8 @@ def detect_box_codes(img, boxes):
             box_data.append(None)
             continue
         
-        print("croenrs[0]: ", corners[0])
-        corners_in_image = [[x + x1, y + y1] for (x,y) in corners[0]]
-        box_data.append({"corners": corners_in_image, "id": ids[0]})
+        corners_in_image = [[x + x1, y + y1] for (x,y) in corners[0][0]]
+        box_data.append({"corners": corners_in_image, "id": ids[0][0]})
     
     return box_data
 
@@ -191,7 +190,6 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
     model = YOLO(MODEL_DIR)
     img, new_camera_matrix = undistort_img(img, camera_matrix, dist_coeffs)
     result = model.predict(source=img)[0]
-    # result.show()
 
     masks = result.masks.data.cpu().numpy()
     masks = rescale_masks(masks, img.shape)
@@ -205,8 +203,8 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
     overlay = draw_masks_and_polygons(img, new_masks, polygons)
     
     boxes = result.boxes.data.cpu().numpy()
-    box_codes = detect_box_codes(img, boxes)
-    print(len(box_codes), "Box codes detected")
+    boxes_info = detect_box_codes(img, boxes)
+    print(len(boxes_info), "Box codes detected")
 
     h, w = img.shape[:2]
     camera_center = np.array([w/2, h/2]) #TODO cam angle not 90
@@ -220,12 +218,13 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
             cv2.circle(overlay, (int(x), int(y)), 5, (0, 255, 0), -1)
         cv2.imwrite("result.png", overlay)
         box_info = boxes_info[i]
+        print(box_info)
         if box_info is None:
             continue
         
-        cuboid_height = get_height_from_qr_code(box_info.corners, camera_matrix, dist_coeffs, camera_position, R)
+        cuboid_height = get_height_from_box_code(box_info["corners"], camera_matrix, dist_coeffs, camera_position, R)
         print("Cuboid height:", cuboid_height)
-        print("Box id:", box_info.id)
+        print("Box id:", box_info["id"])
 
         top_side_world_points = [image_to_world_undistorted1(p[0], p[1], -cuboid_height, new_camera_matrix, rvec, tvec) for p in top_side_points]
             

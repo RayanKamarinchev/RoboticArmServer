@@ -44,7 +44,6 @@ MARKER_SPACING=0.005
 #     ])
 # print(mat @ dis)#[ 0.04730703  0.02566199 -0.12020399]
 
-
 img = decode_image(image_bytes)
 # undistorted = undistort_image(img)
 
