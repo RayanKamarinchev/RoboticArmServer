@@ -1,8 +1,7 @@
 import cv2
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, render_template
 import os
 from datetime import datetime
-import io
 import numpy as np
 import json
 
@@ -46,21 +45,21 @@ def prepare_instructions(img):
     with open(INSTRUCTIONS_DIR, "r") as f:
         instructions_data = json.load(f)
     
-    instructions = []
+    # instructions = []
     
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 1])
+    # instructions.append(["move", *angles])
+    # instructions.append(["wait", 1])
 
-    target_position = get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rvec, tvec)[0]
-    angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
+    # target_position = get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rvec, tvec)[0]
+    # angles = get_move_angles(camera_position, target_position, get_initial_angles(), coordinate_systems_angle)
     
-    instructions.append(["move", *angles])
-    instructions.append(["wait", 1])
-    instructions.append(["grip", 1])
-    instructions.append(["wait", 1])
-    instructions.append(["move", *first_angles])
-    instructions.append(["wait", 30])
-    instructions.append(["grip", 0])
+    # instructions.append(["move", *angles])
+    # instructions.append(["wait", 1])
+    # instructions.append(["grip", 1])
+    # instructions.append(["wait", 1])
+    # instructions.append(["move", *first_angles])
+    # instructions.append(["wait", 30])
+    # instructions.append(["grip", 0])
     
     # for line in instructions_data:
     #     if line[0] == "move":
@@ -145,21 +144,6 @@ def latest_image():
         return send_file(LATEST_IMAGE_PATH, mimetype='image/jpeg')
     return "No image received yet.", 404
 
-@app.route('/')
-def index():
-    return """
-    <html>
-        <head>
-            <title>ESP32-CAM Live View</title>
-            <meta http-equiv="refresh" content="1">
-        </head>
-        <body>
-            <h1>Latest ESP32-CAM Image</h1>
-            <img src="latest.jpg" width="640">
-        </body>
-    </html>
-    """
-
 @app.route('/get_movements', methods=['GET'])
 def receive_data():
     global instructions
@@ -171,6 +155,8 @@ def receive_data():
     flag = False
     print("Sending instructions:", instructions)
     return jsonify(instructions), 200
- 
+
+#User Interface:
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)

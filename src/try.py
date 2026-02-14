@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 from camera_utils import get_camera_position, undistort_image, decode_image, get_marker_positions
-from movement import conv_camera_coords_to_gripper_coords, get_arm_vectors, get_gripper_coords_and_cam_rotation_from_arm, get_initial_angles, get_rotation_matrix, get_translation, transform_arm_to_space_coords
+from movement import conv_camera_coords_to_gripper_coords, get_arm_vectors, get_gripper_coords_and_cam_rotation_from_arm, get_initial_angles, get_rotation_matrix, get_translation, transform_arm_to_world_coords
 from scipy.optimize import minimize
 
 c = 0.13

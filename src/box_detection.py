@@ -1,13 +1,27 @@
 import cv2
 import numpy as np
-from pyzbar.pyzbar import decode
 from ultralytics import YOLO
 import os
 import cv2.aruco as aruco
+from dataclasses import dataclass, asdict
 
 BOX_CODE_SIZE = 0.03
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'cv/runs/segment/train14/weights/best.pt')
+
+@dataclass
+class Box:
+    id: int
+    grab_point: list
+    width: float
+    length: float
+    height: float
+    
+    def to_dict(self):
+        d = asdict(self)
+        if isinstance(d["grab_point"], np.ndarray):
+            d["grab_point"] = d["grab_point"].tolist()
+        return d
 
 def rescale_masks(masks, img_shape):
     scale = img_shape[0] / masks.shape[1]
@@ -150,7 +164,7 @@ def get_cuboid_info(top_side_world_points):
     grab_point = top_side_world_points[1] + 0.5 * width_vec + 0.5 * length_vec - [0,0,top_side_world_points[1][2] * 0.7]
     print("Cuboid grab point:", grab_point)
     
-    return grab_point
+    return grab_point, width, length
 
 def undistort_img(img, camera_matrix, dist_coeffs):
     h, w = img.shape[:2]
@@ -190,6 +204,9 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
     model = YOLO(MODEL_DIR)
     img, new_camera_matrix = undistort_img(img, camera_matrix, dist_coeffs)
     result = model.predict(source=img)[0]
+    
+    if(result.masks is None):
+        return []
 
     masks = result.masks.data.cpu().numpy()
     masks = rescale_masks(masks, img.shape)
@@ -203,12 +220,12 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
     overlay = draw_masks_and_polygons(img, new_masks, polygons)
     
     boxes = result.boxes.data.cpu().numpy()
-    boxes_info = detect_box_codes(img, boxes)
-    print(len(boxes_info), "Box codes detected")
+    boxes_codes_info = detect_box_codes(img, boxes)
+    print(len(boxes_codes_info), "Box codes detected")
 
     h, w = img.shape[:2]
     camera_center = np.array([w/2, h/2]) #TODO cam angle not 90
-    grab_points = []
+    boxes_info = []
     for i, polygon in enumerate(polygons):
         #we know that the furthest point from the camera center is the top of the box, and so are its 2 adjacent points
         furthest_point = np.argmax([np.linalg.norm(p - camera_center) for p in polygon])
@@ -217,19 +234,19 @@ def get_box_coordinates(img, camera_position, R, camera_matrix, dist_coeffs, rve
         for (x, y) in top_side_points:
             cv2.circle(overlay, (int(x), int(y)), 5, (0, 255, 0), -1)
         cv2.imwrite("result.png", overlay)
-        box_info = boxes_info[i]
-        print(box_info)
-        if box_info is None:
+        box_code_info = boxes_codes_info[i]
+        print(box_code_info)
+        if box_code_info is None:
             continue
         
-        cuboid_height = get_height_from_box_code(box_info["corners"], camera_matrix, dist_coeffs, camera_position, R)
+        cuboid_height = get_height_from_box_code(box_code_info["corners"], camera_matrix, dist_coeffs, camera_position, R)
         print("Cuboid height:", cuboid_height)
-        print("Box id:", box_info["id"])
+        print("Box id:", box_code_info["id"])
 
         top_side_world_points = [image_to_world_undistorted1(p[0], p[1], -cuboid_height, new_camera_matrix, rvec, tvec) for p in top_side_points]
             
-        grab_point = get_cuboid_info(top_side_world_points)
-        grab_points.append(grab_point)
+        grab_point, width, length = get_cuboid_info(top_side_world_points)
+        boxes_info.append(Box(box_code_info["id"], grab_point, width, length, cuboid_height))
         
-    return grab_points
+    return boxes_info
     
